@@ -43,10 +43,13 @@ export interface ApiErrorBody {
   detail: string;
 }
 
-/** `gap` block of `GET /api/compare`. */
+/**
+ * `gap` block of `GET /api/compare`. `resolution_days_gap` is null when either
+ * NPU's `stats_json` carries no `median_resolution_days` to difference.
+ */
 export interface CompareGap {
   pulse_gap: number;
-  resolution_days_gap: number;
+  resolution_days_gap: number | null;
 }
 
 /** `GET /api/compare?a=V&b=B` → 200 */
@@ -75,9 +78,9 @@ export interface ChatResponse {
   npu: string;
 }
 
-/** `GET /api/health` → 200 */
+/** `GET /api/health` → 200. `last_ingest` is null before the first ingest. */
 export interface HealthResponse {
   ok: boolean;
-  last_ingest: string;
+  last_ingest: string | null;
   row_count: number;
 }

@@ -43,3 +43,11 @@ export interface Incident {
 }
 
 export type Trend = "improving" | "stable" | "worsening";
+
+/** City-wide medians across all NPUs, supplied to Cortex as the comparison baseline. */
+export interface CityMedians {
+  incident_count_90d: number;
+  incident_count_prior_90d: number;
+  open_case_count: number;
+  median_resolution_days: number | null;
+}
