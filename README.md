@@ -54,6 +54,53 @@ npm run dev:frontend   # Vite dev server on :5173
 
 Copy `.env.example` to `.env` and fill in real values before running anything that touches Postgres, Snowflake, or Gemini (not required for this scaffold ticket).
 
+## Ingest pipeline
+
+`backend/src/ingest/run.ts` is the batch entrypoint (T6). It runs
+fetch → `normalizeRecord` → `loadIncidents` (Snowflake MERGE) → `computeNpuStats`
+→ per NPU `computePulse` + `cortexFindings` + Gemini `generateReport` →
+`upsertReport` into the Postgres `reports` cache. Both incident and report writes
+are keyed upserts, so re-running is safe.
+
+```bash
+# demo/seed mode: read the committed fixtures instead of the portals
+npm run ingest -- --seed
+
+# live mode: fetch the endpoints documented in backend/src/ingest/SOURCES.md
+npm run ingest
+```
+
+Required environment for a real run (both modes still write to Snowflake and
+Postgres — `--seed` only changes where the *input rows* come from):
+
+| Variable | Needed for | Behaviour when missing |
+| --- | --- | --- |
+| `DATABASE_URL` | Postgres `reports` cache | required — the run fails |
+| `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD` | incident load + stats | required — the run fails |
+| `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE` | connection defaults | optional |
+| `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
+
+Notes:
+
+- **Seed date shift.** The committed fixtures are archives (APD ≈2016–17,
+  ATL311 = 2015). In `--seed` every `occurred_at`/`resolved_at` is moved forward
+  by a single whole-day offset per source, so the newest row lands on yesterday
+  and the 90-day window is populated. Relative deltas — including resolution
+  durations — are preserved exactly, and the shift is deterministic.
+- **Rejected rows are counted, not patched.** The 2015 ATL311 export publishes an
+  address rather than coordinates, so those rows cannot be joined to an NPU and
+  are rejected with a per-source count in the log. Coordinates and NPU
+  assignments are never invented.
+- **All 25 NPUs get a row.** NPUs with no incidents are scored from a synthesized
+  zero-count stats entry inside the full 25-element array that `computePulse`
+  z-scores against.
+- **Live fetchers may be blocked.** The fetchers target the endpoints in
+  `SOURCES.md`; some sandboxes and CI runners block that egress. Unit tests never
+  hit the network — they run against the committed fixtures. Verified once from
+  this container: the APD mirror returns 268,748 CSV rows with the fixture's
+  field names, and the ATL311 archive expands to a 146 MB CSV, so a live ATL311
+  run needs headroom that `--seed` does not.
+
 ## CI
 
 `.github/workflows/ci.yml` runs `test`, `build`, and `e2e` jobs on every PR and on push to `main`, targeting Node 20.
