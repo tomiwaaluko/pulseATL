@@ -1,0 +1,20 @@
+{
+  "name": "pulse-atl",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "backend",
+    "frontend",
+    "e2e"
+  ],
+  "scripts": {
+    "test": "npm run test --workspace=backend",
+    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "e2e": "npm run build && npm run e2e --workspace=e2e",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend"
+  }
+}
