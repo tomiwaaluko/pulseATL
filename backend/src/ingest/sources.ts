@@ -107,7 +107,11 @@ export function extractFromTarGz(archive: Buffer, matches: (name: string) => boo
     const size = parseInt(tar.toString("utf8", offset + 124, offset + 136).replace(/\0.*$/, "").trim() || "0", 8);
     const typeFlag = tar.toString("utf8", offset + 156, offset + 157);
     const start = offset + 512;
-    if ((typeFlag === "0" || typeFlag === "\0") && matches(name)) {
+    // macOS-created archives carry an AppleDouble sidecar (`._name`) next to the
+    // real member; it matches the same name pattern but holds binary metadata.
+    const basename = name.slice(name.lastIndexOf("/") + 1);
+    const isSidecar = basename.startsWith("._") || name.includes("PaxHeader");
+    if ((typeFlag === "0" || typeFlag === "\0") && !isSidecar && matches(name)) {
       return tar.toString("utf8", start, start + size);
     }
     offset = start + Math.ceil(size / 512) * 512;

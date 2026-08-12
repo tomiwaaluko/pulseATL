@@ -23,14 +23,18 @@ function source(id: string) {
   return found;
 }
 
-function tarGz(name: string, content: string): Buffer {
-  const header = Buffer.alloc(512);
-  header.write(name, 0, "utf8");
-  header.write(`${Buffer.byteLength(content).toString(8).padStart(11, "0")}\0`, 124, "utf8");
-  header.write("0", 156, "utf8");
-  const body = Buffer.alloc(Math.ceil(Buffer.byteLength(content) / 512) * 512);
-  body.write(content, 0, "utf8");
-  return gzipSync(Buffer.concat([header, body, Buffer.alloc(1024)]));
+function tarGz(names: string[], contents: string[]): Buffer {
+  const blocks = names.flatMap((name, index) => {
+    const content = contents[index];
+    const header = Buffer.alloc(512);
+    header.write(name, 0, "utf8");
+    header.write(`${Buffer.byteLength(content).toString(8).padStart(11, "0")}\0`, 124, "utf8");
+    header.write("0", 156, "utf8");
+    const body = Buffer.alloc(Math.ceil(Buffer.byteLength(content) / 512) * 512);
+    body.write(content, 0, "utf8");
+    return [header, body];
+  });
+  return gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)]));
 }
 
 function incident(overrides: Partial<Incident> = {}): Incident {
@@ -93,8 +97,11 @@ describe("live-fetch parsing", () => {
       .toBe("2017-01-01T00:00:00Z");
   });
 
-  it("extracts the named CSV member from a gzipped tar", () => {
-    const archive = tarGz("data/ATL311 SR Data 2015.csv", "SR #,Status\n1,Closed\n");
+  it("extracts the named CSV member from a gzipped tar, skipping AppleDouble sidecars", () => {
+    const archive = tarGz(
+      ["./._ATL311 SR Data 2015.csv", "ATL311 SR Data 2015.csv"],
+      ["\u0000\u0005\u0016\u0007 Mac OS X metadata", "SR #,Status\n1,Closed\n"],
+    );
     expect(parseCsv(extractFromTarGz(archive, (name) => /ATL311 SR Data 2015\.csv$/i.test(name))))
       .toEqual([{ "SR #": "1", Status: "Closed" }]);
     expect(() => extractFromTarGz(archive, (name) => name === "missing.csv")).toThrow(/expected CSV member/);

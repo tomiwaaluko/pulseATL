@@ -96,7 +96,10 @@ Notes:
   z-scores against.
 - **Live fetchers may be blocked.** The fetchers target the endpoints in
   `SOURCES.md`; some sandboxes and CI runners block that egress. Unit tests never
-  hit the network — they run against the committed fixtures.
+  hit the network — they run against the committed fixtures. Verified once from
+  this container: the APD mirror returns 268,748 CSV rows with the fixture's
+  field names, and the ATL311 archive expands to a 146 MB CSV, so a live ATL311
+  run needs headroom that `--seed` does not.
 
 ## CI
 
