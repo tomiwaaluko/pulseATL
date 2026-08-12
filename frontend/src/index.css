@@ -1,3 +1,39 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Leaflet paints its own light chrome; keep the map dark and map-first. */
+.leaflet-container {
+  background: #020617;
+  font-family: inherit;
+}
+
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.8);
+  color: #94a3b8;
+}
+
+.leaflet-control-attribution a {
+  color: #7dd3fc;
+}
+
+.npu-polygon {
+  cursor: pointer;
+  transition: fill-opacity 120ms ease-out;
+}
+
+.npu-polygon:hover {
+  fill-opacity: 0.85;
+}
+
+.leaflet-tooltip {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+}
+
+.leaflet-tooltip::before {
+  border-top-color: #334155;
+}
