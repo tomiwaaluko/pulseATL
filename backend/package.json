@@ -8,6 +8,7 @@
     "test": "vitest run",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "ingest": "tsx src/ingest/run.ts",
     "smoke:snowflake": "tsx scripts/smoke-snowflake.ts"
   },
   "dependencies": {
