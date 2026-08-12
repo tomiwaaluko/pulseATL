@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: {
     command: "node ../backend/dist/server.js",
     cwd: path.join(__dirname),
-    url: "http://localhost:3000/healthz",
+    url: "http://localhost:3000/api/health",
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },
