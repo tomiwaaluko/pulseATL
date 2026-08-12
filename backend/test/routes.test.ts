@@ -152,8 +152,17 @@ describe("GET /api/compare", () => {
 });
 
 describe("POST /api/chat", () => {
+  const validStats = {
+    npu: "V",
+    incident_count_90d: 10,
+    incident_count_prior_90d: 8,
+    open_case_count: 3,
+    median_resolution_days: 50,
+    counts_by_category: { crime: 6, infrastructure: 4 },
+  };
+
   it("returns a complete answer for a known npu", async () => {
-    getReport.mockResolvedValue(makeReport());
+    getReport.mockResolvedValue(makeReport({ stats_json: validStats }));
     chatAnswer.mockResolvedValue("Crime is down 10% over the last 90 days.");
 
     const res = await request(createApp())
@@ -162,12 +171,7 @@ describe("POST /api/chat", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ answer: "Crime is down 10% over the last 90 days.", npu: "V" });
-    expect(chatAnswer).toHaveBeenCalledWith(
-      "V",
-      "How is crime trending?",
-      [],
-      { median_resolution_days: 50, incident_count_90d: 10 },
-    );
+    expect(chatAnswer).toHaveBeenCalledWith("V", "How is crime trending?", [], validStats);
   });
 
   it("returns 404 for an unknown npu without calling gemini", async () => {
@@ -189,6 +193,30 @@ describe("POST /api/chat", () => {
 
     expect(res.status).toBe(400);
     expect(getReport).not.toHaveBeenCalled();
+    expect(chatAnswer).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 JSON when the cached stats are malformed", async () => {
+    getReport.mockResolvedValue(makeReport({ stats_json: { median_resolution_days: 50 } }));
+
+    const res = await request(createApp())
+      .post("/api/chat")
+      .send({ npu: "V", question: "How is crime trending?", history: [] });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ detail: "cached stats are malformed" });
+    expect(chatAnswer).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 JSON when the cached stats are null", async () => {
+    getReport.mockResolvedValue(makeReport({ stats_json: null }));
+
+    const res = await request(createApp())
+      .post("/api/chat")
+      .send({ npu: "V", question: "How is crime trending?", history: [] });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ detail: "cached stats are malformed" });
     expect(chatAnswer).not.toHaveBeenCalled();
   });
 });
@@ -225,5 +253,41 @@ describe("unmatched /api routes", () => {
     const res = await request(createApp()).get("/api/does-not-exist");
 
     expect(res.status).not.toBe(200);
+  });
+});
+
+describe("JSON error-handling middleware", () => {
+  it("returns a JSON 500 instead of Express's default HTML error page", async () => {
+    getAllReports.mockRejectedValue(new Error("boom"));
+
+    const res = await request(createApp()).get("/api/npus");
+
+    expect(res.status).toBe(500);
+    expect(res.type).toBe("application/json");
+    expect(res.body).toEqual({ detail: "internal server error" });
+  });
+
+  it("does not interfere with existing 404 JSON responses", async () => {
+    getReport.mockResolvedValue(null);
+
+    const res = await request(createApp()).get("/api/npus/ZZ");
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ detail: "unknown npu" });
+  });
+
+  it("does not interfere with existing 503 JSON responses", async () => {
+    getAllReports.mockResolvedValue([]);
+
+    const res = await request(createApp()).get("/api/npus");
+
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ detail: "report cache is empty" });
+  });
+
+  it("does not interfere with the SPA fallback for non-api routes", async () => {
+    const res = await request(createApp()).get("/some/frontend/route");
+
+    expect(res.status).not.toBe(500);
   });
 });
