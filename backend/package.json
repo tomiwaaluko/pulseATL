@@ -7,12 +7,14 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "smoke:snowflake": "tsx scripts/smoke-snowflake.ts"
   },
   "dependencies": {
     "@google/genai": "^2.16.0",
     "express": "^4.21.2",
     "pg": "^8.23.0",
+    "snowflake-sdk": "^3.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

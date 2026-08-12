@@ -16,3 +16,35 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 export function getConfig(): Config {
   return loadConfig(process.env);
 }
+
+/**
+ * Snowflake credentials are OPTIONAL at boot (T8: the server must start with
+ * only DATABASE_URL). This block is validated lazily — the first time a
+ * Snowflake connection is actually opened — never at import time.
+ */
+const snowflakeConfigSchema = z.object({
+  SNOWFLAKE_ACCOUNT: z.string().min(1),
+  SNOWFLAKE_USER: z.string().min(1),
+  SNOWFLAKE_PASSWORD: z.string().min(1),
+  SNOWFLAKE_WAREHOUSE: z.string().min(1).optional(),
+  SNOWFLAKE_DATABASE: z.string().min(1).optional(),
+  SNOWFLAKE_SCHEMA: z.string().min(1).optional(),
+  SNOWFLAKE_ROLE: z.string().min(1).optional(),
+});
+
+export type SnowflakeConfig = z.infer<typeof snowflakeConfigSchema>;
+
+/** Throws a redacted error listing only the missing variable names. */
+export function loadSnowflakeConfig(env: NodeJS.ProcessEnv): SnowflakeConfig {
+  const parsed = snowflakeConfigSchema.safeParse(env);
+  if (!parsed.success) {
+    const missing = parsed.error.issues.map((issue) => issue.path.join(".")).join(", ");
+    throw new Error(`Snowflake configuration is incomplete or invalid: ${missing}`);
+  }
+  return parsed.data;
+}
+
+/** True when every required Snowflake variable is present. */
+export function hasSnowflakeConfig(env: NodeJS.ProcessEnv): boolean {
+  return snowflakeConfigSchema.safeParse(env).success;
+}
