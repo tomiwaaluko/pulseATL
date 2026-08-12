@@ -183,6 +183,17 @@ describe("runIngest --seed", () => {
     expect(reports.get("B")?.gemini_report).toBe("Report for B");
   });
 
+  it("publishes nothing when narrative generation fails part-way through", async () => {
+    const cortexFindings = vi.fn(async (stats: NpuStats) =>
+      (stats.npu === "M" ? Promise.reject(new Error("cortex down")) : CORTEX_STUB));
+    const { deps, reports } = harness({ cortexFindings });
+
+    await expect(runIngest(deps, { seed: true })).rejects.toThrow("cortex down");
+    // Reports are generated in full before any are published, so the cache is
+    // never left holding half of this generation and half of the previous one.
+    expect(reports.size).toBe(0);
+  });
+
   it("is idempotent: a second run rewrites the same rows", async () => {
     const { deps, warehouse, reports } = harness();
     const first = await runIngest(deps, { seed: true });

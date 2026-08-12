@@ -37,8 +37,14 @@ function readJsonArray(path: string): RawRecord[] {
   return parsed.filter((row): row is RawRecord => typeof row === "object" && row !== null);
 }
 
+/** A stalled portal must abort rather than hang the whole batch. */
+const FETCH_TIMEOUT_MS = 180_000;
+
 async function fetchBuffer(url: string): Promise<Buffer> {
-  const response = await fetch(url, { redirect: "follow" });
+  const response = await fetch(url, {
+    redirect: "follow",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!response.ok) {
     throw new Error(`Fetch failed for ${url}: HTTP ${response.status}`);
   }

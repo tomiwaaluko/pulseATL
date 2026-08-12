@@ -144,14 +144,18 @@ export async function runIngest(deps: IngestDeps, options: IngestOptions): Promi
   const medians = deps.cityMedians(stats);
   await deps.initSchema();
 
+  // Every narrative is generated before anything is published: Cortex and Gemini
+  // are the calls that fail mid-run, and writing as we go would leave the cache
+  // holding half of this generation and half of the last one.
   let geminiReports = 0;
   const updatedAt = deps.now();
+  const reports: Report[] = [];
   for (const npuStats of stats) {
     const { score, trend } = computePulse(npuStats, stats);
     const findings = await deps.cortexFindings(npuStats, medians);
     const gemini = await reportNarrative(deps, npuStats, findings);
     if (gemini !== REPORT_PLACEHOLDER) geminiReports += 1;
-    await deps.upsertReport({
+    reports.push({
       npu: npuStats.npu,
       pulse_score: score,
       trend,
@@ -160,6 +164,9 @@ export async function runIngest(deps: IngestDeps, options: IngestOptions): Promi
       gemini_report: gemini,
       updated_at: updatedAt,
     });
+  }
+  for (const report of reports) {
+    await deps.upsertReport(report);
   }
   deps.log(`[ingest] wrote ${stats.length} report rows (${geminiReports} Gemini narratives)`);
 
