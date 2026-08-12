@@ -22,7 +22,17 @@ function trendFor(delta: number): Trend {
   return "stable";
 }
 
-/** Compute a stable 0–100 score; 50 is city-average and higher is healthier. */
+/**
+ * Compute a stable 0–100 pulse score; 50 = city average, higher is healthier.
+ *
+ * Design-spec §4 reconciliation (reviewed in PR #7): the spec's literal text
+ * clamps the raw weighted z-composite to [0, 100-scale], which degenerates —
+ * z-composites live in roughly [-2, 2], so nearly every NPU would peg at ~100.
+ * We keep §4's substance (weights 0.5 incident-rate z + 0.3 trend z +
+ * 0.2 resolution z, z-scored across all NPUs, deterministic) and map the
+ * composite onto the 0–100 scale as score = clamp(50 - 10·riskZ, 0, 100):
+ * demo-explainable as "50 is city average; ~10 points per standard deviation".
+ */
 export function computePulse(stats: NpuStats, allStats: NpuStats[]): { score: number; trend: Trend } {
   const comparison = allStats.length ? allStats : [stats];
   const deltas = comparison.map(trendDelta);

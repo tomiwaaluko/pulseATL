@@ -28,7 +28,11 @@ describe("normalization", () => {
     expect(incident?.occurred_at).toEqual(new Date("2017-01-01T00:00:00Z"));
   });
 
-  it("normalizes geocoded ATL311 rows and local timestamps", () => {
+  // Post-geocoding target shape: real fixture rows carry NO coordinates until
+  // the T2b enrichment (PUL-19) adds latitude/longitude. This test locks the
+  // shape the geocoded rows must normalize into; the test below it asserts
+  // today's real-fixture behavior.
+  it("normalizes ATL311 rows once geocoding has added coordinates", () => {
     const incident = normalizeRecord({
       "SR #": "123",
       Opened: "9/17/2015 9:36",
@@ -45,6 +49,40 @@ describe("normalization", () => {
       npu: "V",
     });
     expect(incident?.occurred_at.toISOString()).toBe("2015-09-17T13:36:00.000Z");
+  });
+
+  it("tells the truth about the real ATL311 fixture (all rows reject until geocoded)", () => {
+    const rows = JSON.parse(readFileSync(
+      resolve(__dirname, "fixtures/atl311_service_requests.sample.json"), "utf8",
+    )) as Array<Record<string, unknown>>;
+    const atlanta = buildNpuIndex(JSON.parse(readFileSync(
+      resolve(__dirname, "../../frontend/data/npus.geojson"), "utf8",
+    )));
+    expect(rows.length).toBeGreaterThanOrEqual(200);
+    const normalized = rows.map((row) => normalizeRecord(row, "atl311", atlanta));
+    const hasCoordinates = rows.some((row) => "latitude" in row || "lat" in row);
+    if (hasCoordinates) {
+      // T2b enrichment landed: most rows must geocode into a real NPU.
+      expect(normalized.filter(Boolean).length).toBeGreaterThanOrEqual(rows.length * 0.8);
+    } else {
+      // Today's truth: no coordinate fields exist, so every row is rejected.
+      expect(normalized.every((incident) => incident === null)).toBe(true);
+    }
+  });
+
+  it("subtracts interior rings (holes) from polygons", () => {
+    const donut = buildNpuIndex({
+      type: "FeatureCollection",
+      features: [{ type: "Feature", properties: { NPU: "D" }, geometry: {
+        type: "Polygon",
+        coordinates: [
+          [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],
+          [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]],
+        ],
+      } }],
+    });
+    expect(donut.find(2, 2)).toBe("D");
+    expect(donut.find(5, 5)).toBeNull();
   });
 
   it("rejects missing coordinates and points outside Atlanta NPUs", () => {
