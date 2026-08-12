@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type {
   GeoJSON as LeafletGeoJSON,
+  Map as LeafletMap,
   Layer,
   LeafletMouseEvent,
   Path,
@@ -64,6 +65,7 @@ export default function PulseMap({
   const scoresRef = useRef(scores);
   scoresRef.current = scores;
   const geoJsonRef = useRef<LeafletGeoJSON | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
 
   const style = (feature?: Feature<Geometry, unknown>): PathOptions => {
     const npu = (feature?.properties as NpuProperties | undefined)?.NPU ?? "";
@@ -97,6 +99,16 @@ export default function PulseMap({
     });
   }, [selectedNpu, scores]);
 
+  // Frame every NPU once the layer exists, so the choropleth fills the
+  // viewport instead of relying on a hardcoded zoom.
+  const fitToNpus = (): void => {
+    const map = mapRef.current;
+    const group = geoJsonRef.current;
+    if (map && group) {
+      map.fitBounds(group.getBounds(), { padding: [24, 24] });
+    }
+  };
+
   const onEachFeature = (
     feature: Feature<Geometry, unknown>,
     layer: Layer
@@ -112,6 +124,7 @@ export default function PulseMap({
   return (
     <div className="relative h-full w-full" data-testid="pulse-map">
       <MapContainer
+        ref={mapRef}
         center={ATLANTA_CENTER}
         zoom={DEFAULT_ZOOM}
         scrollWheelZoom
@@ -127,6 +140,7 @@ export default function PulseMap({
           data={npuGeoJson}
           style={style}
           onEachFeature={onEachFeature}
+          eventHandlers={{ add: fitToNpus }}
         />
       </MapContainer>
 
