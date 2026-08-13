@@ -1,8 +1,10 @@
 name: Diag Snowflake
 
-# Diagnostic-only: connects to Snowflake in stages and dumps the FULL error object
-# (the ingest only surfaces err.message, which hides the real cause).
-# Trigger by pushing to ops/diag-snowflake. Safe to delete once connectivity is settled.
+# Diagnostic-only: tries several account-identifier formats and reports which one
+# actually connects. Snowflake's CURRENT_ACCOUNT() returns the account LOCATOR,
+# which is not always usable in the ORG-ACCOUNT form the SDK expects, so we probe
+# the locator/region form too.
+# Trigger by pushing to ops/diag-snowflake. Delete once connectivity is settled.
 
 on:
   push:
@@ -22,89 +24,72 @@ jobs:
           cache: npm
       - run: npm ci --include=dev
 
-      - name: Staged connection diagnostic
+      - name: Probe account identifier formats
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
-          # Must live inside the repo: Node resolves node_modules from the script's
-          # own directory upward, and the workspace hoists deps to the repo root.
+          # Script must live in the repo so Node resolves the hoisted node_modules.
           cat > diag.mjs <<'SCRIPT'
           import sf from 'snowflake-sdk';
-          sf.configure({ logLevel: 'ERROR' });
+          import https from 'node:https';
+          sf.configure({ logLevel: 'OFF' });
 
-          const dump = (label, e) => {
-            console.log(`\n--- ${label} FAILED ---`);
-            console.log('message :', e?.message);
-            console.log('code    :', e?.code);
-            console.log('sqlState:', e?.sqlState);
-            console.log('name    :', e?.name);
-            console.log('cause   :', e?.cause?.message ?? e?.cause);
-            console.log('isFatal :', e?.isFatal);
-            // response/data can carry the real HTTP failure reason
-            try { console.log('data    :', JSON.stringify(e?.data)?.slice(0, 500)); } catch {}
-            try { console.log('response:', JSON.stringify(e?.response)?.slice(0, 500)); } catch {}
-            console.log('stack   :', String(e?.stack).split('\n').slice(0, 6).join('\n'));
-          };
+          // Known from Snowsight: CURRENT_ACCOUNT()=WC84723, CURRENT_REGION()=AWS_US_EAST_2,
+          // CURRENT_ORGANIZATION_NAME()=YXMHGJM. The locator form is the safest fallback.
+          const candidates = [
+            ['locator.region.cloud', 'wc84723.us-east-2.aws'],
+            ['locator.region',       'wc84723.us-east-2'],
+            ['secret as configured',  process.env.SNOWFLAKE_ACCOUNT],
+            ['org-locator lowercase', 'yxmhgjm-wc84723'],
+          ];
 
-          const tryConnect = (label, opts) => new Promise((resolve) => {
-            const conn = sf.createConnection(opts);
-            conn.connect((err) => {
-              if (err) { dump(label, err); return resolve(null); }
-              console.log(`\n=== ${label} CONNECTED ===`);
-              resolve(conn);
-            });
-          });
-
-          const q = (conn, sqlText) => new Promise((resolve) => {
-            conn.execute({
-              sqlText,
-              complete: (err, _s, rows) => {
-                if (err) { dump(`QUERY ${sqlText}`, err); return resolve(null); }
-                console.log(`OK  ${sqlText} ->`, JSON.stringify(rows?.[0])?.slice(0, 300));
-                resolve(rows);
+          // A 403/404 on the login endpoint means the host is wrong; a 200-ish or
+          // structured JSON error means the host is right and it is a credential issue.
+          const probeHost = (host) => new Promise((resolve) => {
+            const req = https.request(
+              { host, path: '/session/v1/login-request', method: 'POST', timeout: 8000,
+                headers: { 'Content-Type': 'application/json' } },
+              (res) => {
+                let body = '';
+                res.on('data', (c) => (body += c));
+                res.on('end', () => resolve(`HTTP ${res.statusCode} ${body.slice(0, 160)}`));
               },
+            );
+            req.on('timeout', () => { req.destroy(); resolve('TIMEOUT'); });
+            req.on('error', (e) => resolve(`NETERR ${e.code || e.message}`));
+            req.end('{}');
+          });
+
+          const tryConnect = (account) => new Promise((resolve) => {
+            const conn = sf.createConnection({
+              account,
+              username: process.env.SNOWFLAKE_USER,
+              password: process.env.SNOWFLAKE_PASSWORD,
+            });
+            conn.connect((err) => {
+              if (err) return resolve({ ok: false, msg: `${err.code} ${err.message}` });
+              conn.execute({
+                sqlText: 'SELECT CURRENT_ACCOUNT_NAME() AS AN, CURRENT_ORGANIZATION_NAME() AS ON_, CURRENT_REGION() AS R',
+                complete: (qErr, _s, rows) =>
+                  resolve(qErr
+                    ? { ok: true, msg: `connected, query failed: ${qErr.message}` }
+                    : { ok: true, msg: `connected -> ${JSON.stringify(rows?.[0])}` }),
+              });
             });
           });
 
-          const base = {
-            account: process.env.SNOWFLAKE_ACCOUNT,
-            username: process.env.SNOWFLAKE_USER,
-            password: process.env.SNOWFLAKE_PASSWORD,
-          };
-          console.log('account  :', base.account);
-          console.log('user     :', base.username);
-          console.log('warehouse:', process.env.SNOWFLAKE_WAREHOUSE);
-          console.log('database :', process.env.SNOWFLAKE_DATABASE);
-
-          // Stage 1: bare credentials, nothing else.
-          let conn = await tryConnect('STAGE 1 bare', { ...base });
-          if (conn) {
-            await q(conn, 'SELECT CURRENT_VERSION() AS V, CURRENT_ROLE() AS R, CURRENT_ACCOUNT() AS A');
-            await q(conn, `USE WAREHOUSE ${process.env.SNOWFLAKE_WAREHOUSE}`);
-            await q(conn, `USE DATABASE ${process.env.SNOWFLAKE_DATABASE}`);
-            await q(conn, 'USE SCHEMA PUBLIC');
-            await q(conn, 'SELECT COUNT(*) AS C FROM INFORMATION_SCHEMA.TABLES');
+          for (const [label, account] of candidates) {
+            const host = account.includes('.')
+              ? `${account.split('.').slice(0, 1)}.${account.split('.').slice(1).join('.')}.snowflakecomputing.com`
+              : `${account}.snowflakecomputing.com`;
+            console.log(`\n=== ${label}: account="${account}"`);
+            console.log(`    host probe: ${await probeHost(host.toLowerCase())}`);
+            const r = await tryConnect(account);
+            console.log(`    sdk connect: ${r.ok ? 'SUCCESS' : 'FAIL'} — ${r.msg}`);
+            if (r.ok) console.log(`\n*** WORKING ACCOUNT IDENTIFIER: ${account} ***`);
           }
-
-          // Stage 2: the exact shape the app uses (warehouse/database/schema at connect time).
-          const full = {
-            ...base,
-            warehouse: process.env.SNOWFLAKE_WAREHOUSE,
-            database: process.env.SNOWFLAKE_DATABASE,
-            schema: 'PUBLIC',
-          };
-          const conn2 = await tryConnect('STAGE 2 full options', full);
-          if (conn2) await q(conn2, 'SELECT CURRENT_WAREHOUSE() AS W, CURRENT_DATABASE() AS D, CURRENT_SCHEMA() AS S');
-
-          // Stage 3: same, but with OCSP validation relaxed — if only this one works,
-          // the blocker is certificate-revocation checking, not credentials.
-          const conn3 = await tryConnect('STAGE 3 insecureConnect', { ...full, insecureConnect: true });
-          if (conn3) await q(conn3, 'SELECT 1 AS OK');
-
           process.exit(0);
           SCRIPT
           node diag.mjs
