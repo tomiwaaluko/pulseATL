@@ -30,7 +30,9 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
-          cat > /tmp/diag.mjs <<'SCRIPT'
+          # Must live inside the repo: Node resolves node_modules from the script's
+          # own directory upward, and the workspace hoists deps to the repo root.
+          cat > diag.mjs <<'SCRIPT'
           import sf from 'snowflake-sdk';
           sf.configure({ logLevel: 'ERROR' });
 
@@ -105,6 +107,6 @@ jobs:
 
           process.exit(0);
           SCRIPT
-          node /tmp/diag.mjs
+          node diag.mjs
         working-directory: backend
         continue-on-error: true
