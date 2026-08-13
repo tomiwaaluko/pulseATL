@@ -1,0 +1,110 @@
+name: Diag Snowflake
+
+# Diagnostic-only: connects to Snowflake in stages and dumps the FULL error object
+# (the ingest only surfaces err.message, which hides the real cause).
+# Trigger by pushing to ops/diag-snowflake. Safe to delete once connectivity is settled.
+
+on:
+  push:
+    branches:
+      - ops/diag-snowflake
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --include=dev
+
+      - name: Staged connection diagnostic
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+        run: |
+          cat > /tmp/diag.mjs <<'SCRIPT'
+          import sf from 'snowflake-sdk';
+          sf.configure({ logLevel: 'ERROR' });
+
+          const dump = (label, e) => {
+            console.log(`\n--- ${label} FAILED ---`);
+            console.log('message :', e?.message);
+            console.log('code    :', e?.code);
+            console.log('sqlState:', e?.sqlState);
+            console.log('name    :', e?.name);
+            console.log('cause   :', e?.cause?.message ?? e?.cause);
+            console.log('isFatal :', e?.isFatal);
+            // response/data can carry the real HTTP failure reason
+            try { console.log('data    :', JSON.stringify(e?.data)?.slice(0, 500)); } catch {}
+            try { console.log('response:', JSON.stringify(e?.response)?.slice(0, 500)); } catch {}
+            console.log('stack   :', String(e?.stack).split('\n').slice(0, 6).join('\n'));
+          };
+
+          const tryConnect = (label, opts) => new Promise((resolve) => {
+            const conn = sf.createConnection(opts);
+            conn.connect((err) => {
+              if (err) { dump(label, err); return resolve(null); }
+              console.log(`\n=== ${label} CONNECTED ===`);
+              resolve(conn);
+            });
+          });
+
+          const q = (conn, sqlText) => new Promise((resolve) => {
+            conn.execute({
+              sqlText,
+              complete: (err, _s, rows) => {
+                if (err) { dump(`QUERY ${sqlText}`, err); return resolve(null); }
+                console.log(`OK  ${sqlText} ->`, JSON.stringify(rows?.[0])?.slice(0, 300));
+                resolve(rows);
+              },
+            });
+          });
+
+          const base = {
+            account: process.env.SNOWFLAKE_ACCOUNT,
+            username: process.env.SNOWFLAKE_USER,
+            password: process.env.SNOWFLAKE_PASSWORD,
+          };
+          console.log('account  :', base.account);
+          console.log('user     :', base.username);
+          console.log('warehouse:', process.env.SNOWFLAKE_WAREHOUSE);
+          console.log('database :', process.env.SNOWFLAKE_DATABASE);
+
+          // Stage 1: bare credentials, nothing else.
+          let conn = await tryConnect('STAGE 1 bare', { ...base });
+          if (conn) {
+            await q(conn, 'SELECT CURRENT_VERSION() AS V, CURRENT_ROLE() AS R, CURRENT_ACCOUNT() AS A');
+            await q(conn, `USE WAREHOUSE ${process.env.SNOWFLAKE_WAREHOUSE}`);
+            await q(conn, `USE DATABASE ${process.env.SNOWFLAKE_DATABASE}`);
+            await q(conn, 'USE SCHEMA PUBLIC');
+            await q(conn, 'SELECT COUNT(*) AS C FROM INFORMATION_SCHEMA.TABLES');
+          }
+
+          // Stage 2: the exact shape the app uses (warehouse/database/schema at connect time).
+          const full = {
+            ...base,
+            warehouse: process.env.SNOWFLAKE_WAREHOUSE,
+            database: process.env.SNOWFLAKE_DATABASE,
+            schema: 'PUBLIC',
+          };
+          const conn2 = await tryConnect('STAGE 2 full options', full);
+          if (conn2) await q(conn2, 'SELECT CURRENT_WAREHOUSE() AS W, CURRENT_DATABASE() AS D, CURRENT_SCHEMA() AS S');
+
+          // Stage 3: same, but with OCSP validation relaxed — if only this one works,
+          // the blocker is certificate-revocation checking, not credentials.
+          const conn3 = await tryConnect('STAGE 3 insecureConnect', { ...full, insecureConnect: true });
+          if (conn3) await q(conn3, 'SELECT 1 AS OK');
+
+          process.exit(0);
+          SCRIPT
+          node /tmp/diag.mjs
+        working-directory: backend
+        continue-on-error: true
