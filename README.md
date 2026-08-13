@@ -76,9 +76,39 @@ Postgres — `--seed` only changes where the *input rows* come from):
 | Variable | Needed for | Behaviour when missing |
 | --- | --- | --- |
 | `DATABASE_URL` | Postgres `reports` cache | required — the run fails |
-| `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD` | incident load + stats | required — the run fails |
+| `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` | incident load + stats | required — the run fails |
+| `SNOWFLAKE_PRIVATE_KEY` (+ optional `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`) or `SNOWFLAKE_PASSWORD` | Snowflake auth | one of the two is required — the run fails naming both if neither is set |
 | `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE` | connection defaults | optional |
 | `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
+
+### Snowflake authentication: key-pair vs. password
+
+Snowflake accounts with MFA enforced reject password authentication for
+programmatic/API clients — Snowflake returns error `394509` ("MFA
+authentication is required, but none of your current MFA methods are
+supported for programmatic authentication"). Key-pair authentication
+(`SNOWFLAKE_JWT`) is the supported workaround: it authenticates a dedicated
+service user with an RSA key pair instead of a password, and isn't subject
+to MFA.
+
+To use it:
+
+1. Generate an RSA key pair (PKCS#8, unencrypted or passphrase-protected):
+   ```bash
+   openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+   openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
+   ```
+2. Assign the public key to the Snowflake service user (`ALTER USER <user>
+   SET RSA_PUBLIC_KEY='<contents of rsa_key.pub, header/footer stripped>';`).
+3. Set `SNOWFLAKE_PRIVATE_KEY` to the full contents of `rsa_key.p8` (the
+   `-----BEGIN PRIVATE KEY-----` PEM block). If your secret store collapses
+   the key to one line with literal `\n` sequences instead of real
+   newlines, that's handled automatically — no manual re-formatting needed.
+   Set `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` too if the key is encrypted.
+
+`snowflakeClient.ts` prefers `SNOWFLAKE_PRIVATE_KEY` when present and falls
+back to `SNOWFLAKE_PASSWORD` (legacy, non-MFA accounts only) otherwise; if
+neither is set, it throws naming both variables.
 
 Notes:
 

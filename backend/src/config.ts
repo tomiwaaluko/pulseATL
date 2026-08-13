@@ -25,7 +25,13 @@ export function getConfig(): Config {
 const snowflakeConfigSchema = z.object({
   SNOWFLAKE_ACCOUNT: z.string().min(1),
   SNOWFLAKE_USER: z.string().min(1),
-  SNOWFLAKE_PASSWORD: z.string().min(1),
+  // Password auth is legacy: Snowflake MFA blocks it for programmatic access
+  // (error 394509), so key-pair auth is the supported path going forward.
+  // Both are optional here — snowflakeClient.ts picks one and throws a clear
+  // error naming both env vars if neither is set.
+  SNOWFLAKE_PASSWORD: z.string().min(1).optional(),
+  SNOWFLAKE_PRIVATE_KEY: z.string().min(1).optional(),
+  SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: z.string().min(1).optional(),
   SNOWFLAKE_WAREHOUSE: z.string().min(1).optional(),
   SNOWFLAKE_DATABASE: z.string().min(1).optional(),
   SNOWFLAKE_SCHEMA: z.string().min(1).optional(),

@@ -1,13 +1,47 @@
 import snowflake from "snowflake-sdk";
-import type { Connection } from "snowflake-sdk";
+import type { Connection, ConnectionOptions } from "snowflake-sdk";
 
-import { loadSnowflakeConfig } from "./config.js";
+import { loadSnowflakeConfig, type SnowflakeConfig } from "./config.js";
 
 /**
  * Lazy Snowflake connection. Nothing is opened at import time — the server
  * (T8) boots with only DATABASE_URL, and only ingest paths ever connect.
  */
 let connectionPromise: Promise<Connection> | null = null;
+
+/**
+ * Some secret stores mangle multi-line PEM keys into a single line with
+ * literal `\n` escape sequences instead of real newlines. Normalize those
+ * back before handing the key to the driver.
+ */
+function normalizePrivateKey(privateKey: string): string {
+  return privateKey.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey;
+}
+
+/**
+ * Key-pair auth (SNOWFLAKE_JWT) takes priority over password auth: MFA
+ * blocks password auth for programmatic access (Snowflake error 394509), so
+ * key-pair is the supported path whenever a private key is configured.
+ */
+function resolveAuthOptions(
+  env: SnowflakeConfig,
+): Pick<ConnectionOptions, "authenticator" | "privateKey" | "privateKeyPass" | "password"> {
+  if (env.SNOWFLAKE_PRIVATE_KEY) {
+    return {
+      authenticator: "SNOWFLAKE_JWT",
+      privateKey: normalizePrivateKey(env.SNOWFLAKE_PRIVATE_KEY),
+      ...(env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE
+        ? { privateKeyPass: env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE }
+        : {}),
+    };
+  }
+  if (env.SNOWFLAKE_PASSWORD) {
+    return { password: env.SNOWFLAKE_PASSWORD };
+  }
+  throw new Error(
+    "Snowflake authentication is not configured: set either SNOWFLAKE_PRIVATE_KEY (key-pair auth) or SNOWFLAKE_PASSWORD (legacy, blocked by MFA for programmatic access)",
+  );
+}
 
 function openConnection(): Promise<Connection> {
   // Validate before touching the driver so a misconfigured environment fails
@@ -17,7 +51,7 @@ function openConnection(): Promise<Connection> {
   const connection = snowflake.createConnection({
     account: env.SNOWFLAKE_ACCOUNT,
     username: env.SNOWFLAKE_USER,
-    password: env.SNOWFLAKE_PASSWORD,
+    ...resolveAuthOptions(env),
     warehouse: env.SNOWFLAKE_WAREHOUSE,
     database: env.SNOWFLAKE_DATABASE,
     schema: env.SNOWFLAKE_SCHEMA ?? "PUBLIC",
