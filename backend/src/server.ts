@@ -5,6 +5,7 @@ import { getAllReports, initSchema } from "./db";
 import { npusRouter } from "./routes/npus";
 import { compareRouter } from "./routes/compare";
 import { chatRouter } from "./routes/chat";
+import { adminRouter } from "./routes/admin";
 
 export function createApp(): Express {
   const app = express();
@@ -13,6 +14,7 @@ export function createApp(): Express {
   app.use("/api/npus", npusRouter);
   app.use("/api/compare", compareRouter);
   app.use("/api/chat", chatRouter);
+  app.use("/api/admin", adminRouter);
 
   app.get("/api/health", async (_req, res) => {
     try {
