@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, fetchCompare } from "../api";
 import type { CompareResponse, NpuDetail, NpuSummary } from "../types";
 import { scoreColor } from "./PulseMap";
@@ -51,20 +51,67 @@ export default function CompareView({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    function onKeyDown(event: KeyboardEvent): void {
+    const panel = panelRef.current;
+    if (panel === null) {
+      return;
+    }
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusablesIn = (): HTMLElement[] =>
+      Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button, select, a[href], input, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+
+    // Move focus into the dialog so keyboard users start inside it, not behind it.
+    focusablesIn()[0]?.focus();
+
+    // Arrow const (not a hoisted function declaration) so TypeScript keeps the
+    // non-null narrowing of `panel` inside the closure.
+    const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         onClose();
+        return;
       }
-    }
+      if (event.key !== "Tab") {
+        return;
+      }
+      // Trap Tab inside the dialog: the overlay blocks the mouse, so it must
+      // block the keyboard too.
+      const focusables = focusablesIn();
+      if (focusables.length === 0) {
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !panel.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !panel.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
   }, [onClose]);
 
   useEffect(() => {
     if (comparisonNpu === "") {
       setData(null);
       setError(null);
+      // Also clear loading: a fetch already in flight will have been cancelled by
+      // this effect's cleanup, so its own finally() can no longer reset the flag.
+      setLoading(false);
       return;
     }
     let cancelled = false;
@@ -105,11 +152,15 @@ export default function CompareView({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="compare-title"
         className="w-full max-w-3xl overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-50">
+          <h2 id="compare-title" className="text-lg font-semibold text-slate-50">
             Compare neighborhoods
           </h2>
           <button
@@ -174,7 +225,7 @@ export default function CompareView({
                     Pulse score gap
                   </p>
                   <p
-                    className="mt-1 text-6xl font-black tabular-nums text-sky-300"
+                    className="mt-1 text-4xl font-black tabular-nums text-sky-300 sm:text-6xl"
                     data-testid="compare-gap-pulse"
                   >
                     {Math.abs(data.gap.pulse_gap).toFixed(1)}
@@ -193,7 +244,7 @@ export default function CompareView({
                     </p>
                   ) : (
                     <p
-                      className="mt-1 text-6xl font-black tabular-nums text-amber-300"
+                      className="mt-1 text-4xl font-black tabular-nums text-amber-300 sm:text-6xl"
                       data-testid="compare-gap-resolution"
                     >
                       {Math.abs(data.gap.resolution_days_gap).toFixed(0)}
