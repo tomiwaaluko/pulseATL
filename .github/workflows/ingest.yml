@@ -28,6 +28,12 @@ on:
           - seed              # committed fixtures + date shift -> Snowflake -> Postgres
           - live              # fetch the portals in SOURCES.md (may be slow/blocked)
           - seed-no-snowflake # fixtures + local stats, skips Snowflake entirely
+  # Pushing anything to this branch runs a seed ingest. It exists because API
+  # tokens without `actions: write` cannot fire workflow_dispatch, but can push.
+  push:
+    branches:
+      - ops/run-ingest
+
   schedule:
     # Hourly at :17 (off the hour so we are not competing with everyone else's cron).
     - cron: "17 * * * *"
