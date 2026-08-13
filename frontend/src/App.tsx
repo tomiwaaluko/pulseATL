@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, fetchNpuDetail, fetchNpus } from "./api";
+import CompareView from "./components/CompareView";
 import PulseMap from "./components/PulseMap";
 import ReportPanel from "./components/ReportPanel";
 import type { NpuDetail, NpuSummary } from "./types";
@@ -57,6 +58,8 @@ export default function App(): JSX.Element {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
+  const [compareOpen, setCompareOpen] = useState(false);
+
   const loadNpus = useCallback(async (): Promise<void> => {
     setListLoading(true);
     setListError(null);
@@ -86,6 +89,7 @@ export default function App(): JSX.Element {
     setDetailLoading(true);
     setDetailError(null);
     setDetail(null);
+    setCompareOpen(false);
 
     fetchNpuDetail(selectedNpu)
       .then((data) => {
@@ -157,11 +161,19 @@ export default function App(): JSX.Element {
             detail={detail}
             loading={detailLoading}
             error={detailError}
-            onCompare={() => undefined}
+            onCompare={() => setCompareOpen(true)}
             onAsk={() => undefined}
           />
         </aside>
       </div>
+
+      {compareOpen && selectedNpu !== null ? (
+        <CompareView
+          baseNpu={selectedNpu}
+          npus={npus}
+          onClose={() => setCompareOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
