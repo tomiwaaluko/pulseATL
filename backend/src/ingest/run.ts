@@ -244,7 +244,10 @@ if (require.main === module) {
   main().then(
     () => process.exit(0),
     (error: unknown) => {
-      console.error(`[ingest] failed: ${(error as Error).message}`);
+      const failure = error as Error & { code?: string; cause?: unknown };
+      const cause = failure.cause instanceof Error ? ` (cause: ${failure.cause.message})` : "";
+      const code = failure.code === undefined ? "" : ` [${failure.code}]`;
+      console.error(`[ingest] failed${code}: ${failure.message}${cause}`);
       process.exit(1);
     },
   );
