@@ -2,8 +2,7 @@ import crypto from "crypto";
 import { Router } from "express";
 
 import { defaultDeps, runIngest } from "../ingest/run";
-
-const SECRET_ENV_VARS = ["INGEST_TOKEN", "SNOWFLAKE_PASSWORD", "DATABASE_URL", "GEMINI_API_KEY"] as const;
+import { redactSecrets } from "../redact";
 
 /** Ingest runs take minutes; the route responds early rather than holding the connection open. */
 const RESPONSE_DEADLINE_MS = 20_000;
@@ -15,16 +14,6 @@ function timingSafeTokenMatch(provided: string, expected: string): boolean {
   const expectedBuf = Buffer.from(expected);
   if (providedBuf.length !== expectedBuf.length) return false;
   return crypto.timingSafeEqual(providedBuf, expectedBuf);
-}
-
-/** Strips known secret env var values (and generic `scheme://user:pass@host` credentials) from an error message. */
-function redactSecrets(message: string): string {
-  let redacted = message.replace(/:\/\/[^\s@/]+@/g, "://***@");
-  for (const key of SECRET_ENV_VARS) {
-    const value = process.env[key];
-    if (value) redacted = redacted.split(value).join("***");
-  }
-  return redacted;
 }
 
 interface IngestSuccessPayload {

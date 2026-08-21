@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const generateContent = vi.fn();
 
@@ -31,7 +31,7 @@ describe("Gemini client", () => {
 
     expect(result).toContain("# Headline");
     const request = generateContent.mock.calls[0][0];
-    expect(request.model).toBe("gemini-2.0-flash");
+    expect(request.model).toBe("gemini-2.5-flash");
     expect(request.contents).toContain(JSON.stringify(stats));
     expect(request.contents).toContain("Blight increased.");
     expect(request.contents).toMatch(/do not speculate/i);
@@ -58,7 +58,7 @@ describe("Gemini client", () => {
 
     expect(result).toContain("42 incidents");
     const request = generateContent.mock.calls[0][0];
-    expect(request.model).toBe("gemini-2.0-flash");
+    expect(request.model).toBe("gemini-2.5-flash");
     expect(request.contents).toContain(JSON.stringify(stats));
     expect(request.contents).toContain("Tell me about this NPU.");
     expect(request.contents).toContain("What changed?");
@@ -71,5 +71,36 @@ describe("Gemini client", () => {
     await expect(generateReport("V", stats, "None.")).rejects.toThrow(
       "Gemini returned an empty response",
     );
+  });
+});
+
+describe("model selection", () => {
+  const ORIGINAL_MODEL = process.env.GEMINI_MODEL;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.GEMINI_API_KEY = "test-key";
+    generateContent.mockResolvedValue({ text: "a report" });
+  });
+
+  afterEach(() => {
+    if (ORIGINAL_MODEL === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = ORIGINAL_MODEL;
+  });
+
+  it("uses GEMINI_MODEL when set, so a retired model is a config change", async () => {
+    process.env.GEMINI_MODEL = "gemini-3.5-flash";
+
+    await generateReport("V", stats, "findings");
+
+    expect(generateContent.mock.calls[0][0].model).toBe("gemini-3.5-flash");
+  });
+
+  it("falls back to the default when GEMINI_MODEL is an empty string", async () => {
+    process.env.GEMINI_MODEL = "";
+
+    await generateReport("V", stats, "findings");
+
+    expect(generateContent.mock.calls[0][0].model).toBe("gemini-2.5-flash");
   });
 });

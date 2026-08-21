@@ -2,7 +2,22 @@ import { GoogleGenAI } from "@google/genai";
 
 import type { ChatTurn, NpuStats } from "./types.js";
 
-const MODEL = "gemini-2.0-flash";
+/**
+ * Default model. `gemini-2.0-flash` — the original choice — has since been
+ * retired and is no longer in the models list this API key can reach, which is
+ * what made every report fall back to the placeholder with a bare `ApiError`.
+ * `gemini-2.5-flash` is its stable successor and the closest match to the
+ * design intent (fast, cheap, long context).
+ *
+ * Overridable with GEMINI_MODEL so a future retirement is a config change
+ * rather than a redeploy of this file.
+ */
+const DEFAULT_MODEL = "gemini-2.5-flash";
+
+function model(): string {
+  const configured = process.env.GEMINI_MODEL?.trim();
+  return configured === undefined || configured === "" ? DEFAULT_MODEL : configured;
+}
 const MAX_REPORT_WORDS = 200;
 
 function client(): GoogleGenAI {
@@ -14,7 +29,7 @@ function client(): GoogleGenAI {
 }
 
 async function generate(contents: string): Promise<string> {
-  const response = await client().models.generateContent({ model: MODEL, contents });
+  const response = await client().models.generateContent({ model: model(), contents });
   const text = response.text?.trim();
   if (!text) {
     throw new Error("Gemini returned an empty response");

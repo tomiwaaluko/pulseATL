@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { describeError } from "../redact.js";
 import { sfQuery } from "../snowflakeClient.js";
 import type { CityMedians, Incident, NpuStats } from "../types.js";
 
@@ -270,8 +271,12 @@ export async function cortexFindings(stats: NpuStats, medians: CityMedians): Pro
     const raw = rows[0]?.FINDINGS ?? rows[0]?.findings;
     const findings = typeof raw === "string" ? raw.trim() : "";
     if (findings) return findings;
-  } catch {
-    // fall through to the marked fallback
+  } catch (error) {
+    // Log the cause: a swallowed error made a Cortex outage indistinguishable
+    // from Cortex returning an empty string, and the fallback text alone gave
+    // no way to tell a missing entitlement from an unavailable model. The
+    // message is redacted because driver errors can echo connection details.
+    console.error(`[cortex] NPU ${stats.npu} findings unavailable — ${describeError(error)}`);
   }
   return `${CORTEX_FALLBACK_PREFIX} Snowflake Cortex did not return findings for NPU ${stats.npu}; the report narrative falls back to the Gemini summary of the same statistics.`;
 }
