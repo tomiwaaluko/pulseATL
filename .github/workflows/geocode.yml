@@ -43,7 +43,10 @@ jobs:
 
       - name: Geocode ATL311 fixture
         id: geocode
-        run: npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode-summary.txt"
+        run: |
+          # pipefail: without it `cmd | tee` reports tee's exit code, hiding a crash.
+          set -o pipefail
+          npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode-summary.txt"
 
       - name: Publish run summary
         if: always()
