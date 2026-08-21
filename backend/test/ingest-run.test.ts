@@ -9,7 +9,8 @@ import {
   type IngestDeps,
 } from "../src/ingest/run.js";
 import { cityMedians } from "../src/ingest/load.js";
-import { MILLIS_PER_DAY, SOURCES, listNpus, loadNpuIndex } from "../src/ingest/sources.js";
+import { normalizeRecord } from "../src/ingest/normalize.js";
+import { MILLIS_PER_DAY, SOURCES, listNpus, loadNpuIndex, shiftIncidentsToRecent } from "../src/ingest/sources.js";
 import type { Incident, NpuStats, Report } from "../src/types.js";
 
 const NOW = new Date("2026-08-12T16:00:00.000Z");
@@ -164,9 +165,15 @@ describe("runIngest --seed", () => {
     const atl311 = summary.sources.find((item) => item.source === "atl311");
     expect(apd?.fetched).toBe(250);
     expect(apd?.normalized).toBeGreaterThan(200);
-    // The committed ATL311 export carries no coordinates, so every row is rejected.
-    expect(atl311).toEqual({ source: "atl311", fetched: 250, normalized: 0, rejected: 250 });
-    expect(logs.some((line) => line.includes("[atl311] 250 rows read, 0 normalized, 250 rejected"))).toBe(true);
+    // PULSE-19: the fixture is geocoded, but a Census non-match, an out-of-bounds
+    // match, or a real address outside every NPU polygon (the export also covers
+    // other Fulton County cities, e.g. College Park) all still reject — not every
+    // row normalizes.
+    expect(atl311?.fetched).toBe(250);
+    expect(atl311?.normalized).toBeGreaterThan(100);
+    expect(atl311?.rejected).toBeGreaterThan(0);
+    expect(atl311?.normalized).toBe(250 - (atl311?.rejected ?? 0));
+    expect(logs.some((line) => line.includes("[atl311]") && line.includes("rows read"))).toBe(true);
   });
 
   it("writes the placeholder narrative when Gemini is unconfigured", async () => {
@@ -250,17 +257,42 @@ describe("runIngest --no-snowflake", () => {
     );
     expect(active.length).toBeGreaterThan(5);
     expect(logs.some((line) => line.includes("[apd_crime]") && line.includes("rows read"))).toBe(true);
-    expect(logs.some((line) => line.includes("[atl311] 250 rows read, 0 normalized, 250 rejected"))).toBe(true);
+    expect(logs.some((line) => line.includes("[atl311]") && line.includes("rows read"))).toBe(true);
   });
 
   it("leaves median_resolution_days null (not 0) for NPUs with no resolved incidents", async () => {
     const { deps, reports } = harness();
     await runIngest(deps, { seed: false, noSnowflake: true });
 
-    // The committed APD fixture never carries a resolved_at, so every NPU's
-    // median must stay null rather than being coerced to 0.
+    // Independently derive, the same way collectIncidents does (per-source
+    // normalize then date-shift), which NPUs have at least one resolved
+    // incident inside the 180-day window computeLocalNpuStats uses.
+    const npuIndex = loadNpuIndex();
+    const incidents = SOURCES.flatMap((source) => {
+      const normalized = source.readFixture()
+        .map((row) => normalizeRecord(row, source.id, npuIndex))
+        .filter((item): item is Incident => item !== null);
+      return shiftIncidentsToRecent(normalized, NOW);
+    });
+    const windowStart = NOW.getTime() - 180 * MILLIS_PER_DAY;
+    const resolvedNpus = new Set(
+      incidents
+        .filter((incident) => incident.occurred_at.getTime() >= windowStart && incident.resolved_at !== null)
+        .map((incident) => incident.npu),
+    );
+
+    // APD never publishes a resolved_at, but PULSE-19 geocoded ATL311 rows do —
+    // at least one NPU they cover must now show a real median, not a permanent null.
+    expect(resolvedNpus.size).toBeGreaterThan(0);
+
     for (const report of reports.values()) {
-      expect((report.stats_json as NpuStats).median_resolution_days).toBeNull();
+      const median = (report.stats_json as NpuStats).median_resolution_days;
+      if (resolvedNpus.has(report.npu)) {
+        expect(median).not.toBeNull();
+      } else {
+        // Zero resolved incidents in the window: median must stay null, never 0.
+        expect(median).toBeNull();
+      }
     }
   });
 

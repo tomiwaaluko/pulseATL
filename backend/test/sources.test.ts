@@ -67,15 +67,18 @@ describe("source fixtures", () => {
     expect(incidents.every((item) => item.source === "apd_crime" && item.category === "crime")).toBe(true);
   });
 
-  it("reads ATL311 rows and reports them as rejected while the export has no coordinates", () => {
+  it("reads ATL311 rows, geocoded by PULSE-19, and normalizes most into a real NPU", () => {
     const npuIndex = loadNpuIndex();
     const rows = source("atl311").readFixture();
     expect(rows.length).toBe(250);
 
-    // SOURCES.md: the 2015 export publishes an address, not lat/lon. Rejecting is
-    // the documented behaviour — coordinates are never invented.
+    // SOURCES.md: backend/scripts/geocode-atl311.ts fills latitude/longitude via
+    // the Census batch geocoder. A row still rejects when Census can't match it,
+    // the match falls outside the Atlanta bbox, or the address is real but in
+    // another Fulton County city outside every NPU polygon — never fabricated.
     const normalized = rows.map((row) => normalizeRecord(row, "atl311", npuIndex));
-    expect(normalized.every((item) => item === null)).toBe(true);
+    expect(normalized.some((item) => item !== null)).toBe(true);
+    expect(normalized.some((item) => item === null)).toBe(true);
   });
 
   it("points each fetcher at its documented endpoint", () => {

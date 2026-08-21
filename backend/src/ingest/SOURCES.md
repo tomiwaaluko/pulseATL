@@ -89,9 +89,14 @@ required.
 - Run it locally with `npm run geocode:atl311 --workspace=backend`, or via the
   `Geocode ATL311 fixture` GitHub Actions workflow
   (`.github/workflows/geocode.yml`), which commits the updated fixture back to
-  `ticket/PULSE-19-geocode-workflow`. **Coverage number**: to be filled in
-  after the first real workflow run (this PR ships the tooling; the fixture
-  itself is still coordinate-less until that run lands).
+  `ticket/PULSE-19-geocode-workflow`.
+- **Coverage (first real run)**: 128/250 rows geocoded (51.2%) — 26 Census
+  no-matches, 32 matches outside the Atlanta bbox, 0 unparseable responses, and
+  64 rows with no usable address at all. 118/250 rows (47.2%) normalize into a
+  real NPU; the shortfall from 128 isn't a bug — `City/County` on 38 of the 250
+  rows names another Fulton County city (College Park, Sandy Springs, Fairburn,
+  Union City, East Point) that sits entirely outside every Atlanta NPU polygon,
+  so those rows correctly reject at the NPU join even when Census geocodes them.
 
 ## NPU boundary layer
 
