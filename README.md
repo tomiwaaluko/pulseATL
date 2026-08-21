@@ -82,6 +82,7 @@ Postgres — `--seed` only changes where the *input rows* come from):
 | `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` | incident load + stats | required — the run fails |
 | `SNOWFLAKE_PRIVATE_KEY` (+ optional `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`) or `SNOWFLAKE_PASSWORD` | Snowflake auth | one of the two is required — the run fails naming both if neither is set |
 | `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE` | connection defaults | optional |
+| `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
 
 ### Demo-only: triggering ingest over HTTP
 
@@ -92,7 +93,14 @@ Postgres/Snowflake directly. It is a demo convenience, not a general admin
 API: the route is **disabled (404) unless `INGEST_TOKEN` is set**, requires
 the token as a query param, and only ever runs the seed pipeline. Do not set
 `INGEST_TOKEN` in a deployment you don't want this reachable on.
-| `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
+
+Adding `&snowflake=off` runs the `--no-snowflake` path described below
+instead. Use it when the deployed service is the only host that can reach
+Postgres *and* its Snowflake credentials are the broken part — otherwise
+there is no way to populate the cache at all. The response reports which
+path ran as `snowflake_skipped`, and `cortex_findings` carries the
+unavailable marker rather than a Cortex narrative, so a run made this way is
+never mistaken for a full one.
 
 ### Snowflake authentication: key-pair vs. password
 
