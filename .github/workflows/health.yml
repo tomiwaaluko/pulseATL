@@ -1,0 +1,44 @@
+name: Health check
+
+# Reads the deployed service's public health endpoint from a GitHub runner and
+# prints it to the run summary.
+#
+# Why this exists: the orchestration sandbox's egress proxy blocks
+# onrender.com, so there is otherwise no way to confirm whether an ingest
+# actually populated the cache without asking a human to open a URL and read
+# the JSON back. A runner has open egress. No secrets are involved — /api/health
+# is public and returns only {ok, last_ingest, row_count}.
+#
+# Trigger by pushing to ops/health-check, or from the Actions tab.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ops/health-check
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read /api/health
+        run: |
+          # The free plan cold-starts, so allow time for the service to wake.
+          health=$(curl -s --max-time 120 https://pulse-atl.onrender.com/api/health || echo '{"error":"unreachable"}')
+          echo "$health"
+          {
+            echo "### Deployed health"
+            echo '```json'
+            echo "$health"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Fail loudly on an empty cache so a red run means "no data", not "no answer".
+          rows=$(echo "$health" | python3 -c "import sys,json; print(json.load(sys.stdin).get('row_count','?'))" 2>/dev/null || echo '?')
+          echo "row_count=$rows"
+          if [ "$rows" = "0" ] || [ "$rows" = "?" ]; then
+            echo "::error::report cache is empty or unreadable (row_count=$rows)"
+            exit 1
+          fi
+          echo "::notice::cache holds $rows report rows"
