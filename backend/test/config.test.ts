@@ -47,3 +47,30 @@ describe("Snowflake config", () => {
     expect(message).not.toContain("secret");
   });
 });
+
+describe("optional Snowflake secrets", () => {
+  const base = {
+    SNOWFLAKE_ACCOUNT: "wc84723.us-east-2.aws",
+    SNOWFLAKE_USER: "SVC",
+    SNOWFLAKE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----",
+  };
+
+  it("treats empty-string optional secrets as absent", () => {
+    // GitHub Actions substitutes "" for any secret that does not exist, so an
+    // unset SNOWFLAKE_PASSWORD arrives as an empty string rather than undefined.
+    const config = loadSnowflakeConfig({
+      ...base,
+      SNOWFLAKE_PASSWORD: "",
+      SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: "",
+      SNOWFLAKE_ROLE: "   ",
+    });
+    expect(config.SNOWFLAKE_PASSWORD).toBeUndefined();
+    expect(config.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE).toBeUndefined();
+    expect(config.SNOWFLAKE_ROLE).toBeUndefined();
+    expect(config.SNOWFLAKE_PRIVATE_KEY).toContain("BEGIN PRIVATE KEY");
+  });
+
+  it("still reports genuinely missing required variables", () => {
+    expect(() => loadSnowflakeConfig({ SNOWFLAKE_USER: "SVC" })).toThrow(/SNOWFLAKE_ACCOUNT/);
+  });
+});
