@@ -1,6 +1,7 @@
 import { initSchema, upsertReport } from "../db.js";
 import { generateReport } from "../geminiClient.js";
 import { computePulse } from "../pulse.js";
+import { describeError } from "../redact.js";
 import { closeSnowflake } from "../snowflakeClient.js";
 import type { CityMedians, Incident, NpuStats, Report, SourceId } from "../types.js";
 import { computeLocalNpuStats } from "./localStats.js";
@@ -138,7 +139,9 @@ async function reportNarrative(deps: IngestDeps, stats: NpuStats, findings: stri
   try {
     return await deps.generateReport(stats.npu, stats, findings);
   } catch (error) {
-    deps.log(`[gemini] NPU ${stats.npu} report unavailable (${(error as Error).name}); wrote placeholder`);
+    // The error class alone ("ApiError") cannot distinguish a rejected key from
+    // a quota limit or an unavailable model; include the redacted message.
+    deps.log(`[gemini] NPU ${stats.npu} report unavailable — ${describeError(error)}; wrote placeholder`);
     return REPORT_PLACEHOLDER;
   }
 }
