@@ -7,6 +7,18 @@ import { compareRouter } from "./routes/compare";
 import { chatRouter } from "./routes/chat";
 import { adminRouter } from "./routes/admin";
 
+function errorStatus(err: unknown): number {
+  if (typeof err === "object" && err !== null) {
+    const candidate =
+      (err as { status?: unknown; statusCode?: unknown }).status ??
+      (err as { statusCode?: unknown }).statusCode;
+    if (typeof candidate === "number" && candidate >= 400 && candidate < 600) {
+      return candidate;
+    }
+  }
+  return 500;
+}
+
 export function createApp(): Express {
   const app = express();
   app.use(express.json());
@@ -37,6 +49,15 @@ export function createApp(): Express {
 
   app.get(/^\/(?!api).*/, (_req, res) => {
     res.sendFile(path.join(frontendDist, "index.html"));
+  });
+
+  app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (res.headersSent) {
+      next(err);
+      return;
+    }
+    console.error(err);
+    res.status(errorStatus(err)).json({ detail: "internal server error" });
   });
 
   return app;
