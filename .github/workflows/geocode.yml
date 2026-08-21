@@ -10,8 +10,9 @@ name: Geocode ATL311 fixture
 on:
   workflow_dispatch:
 
-  # Pushing to this branch runs a geocode. It exists because API tokens without
-  # `actions: write` cannot fire workflow_dispatch, but can push.
+  # Pushing to this branch runs a geocode and commits the coordinates back to
+  # it. It exists because API tokens without `actions: write` cannot fire
+  # workflow_dispatch, but can push.
   push:
     branches:
       - ops/run-geocode
@@ -28,9 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # No explicit ref: check out whatever branch triggered this run, so the
+      # workflow keeps working after the PULSE-19 branch is merged and deleted.
       - uses: actions/checkout@v4
-        with:
-          ref: ticket/PULSE-19-geocode-workflow
 
       - uses: actions/setup-node@v4
         with:
@@ -62,4 +63,5 @@ jobs:
           fi
           git add backend/test/fixtures/atl311_service_requests.sample.json
           git commit -m "[PULSE-19] Geocode ATL311 fixture via Census batch API"
-          git push origin HEAD:ticket/PULSE-19-geocode-workflow
+          # Coordinates land back on the branch that triggered the run.
+          git push origin "HEAD:${GITHUB_REF_NAME}"
