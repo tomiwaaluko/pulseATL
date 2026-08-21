@@ -34,9 +34,11 @@ on:
     branches:
       - ops/run-ingest
 
-  schedule:
-    # Hourly at :17 (off the hour so we are not competing with everyone else's cron).
-    - cron: "17 * * * *"
+  # Hourly schedule is disabled until Snowflake key-pair auth lands: password auth
+  # is blocked by MFA (394509), so every scheduled run failed. Re-enable by
+  # uncommenting once an ingest run succeeds.
+  # schedule:
+  #   - cron: "17 * * * *"
 
 concurrency:
   group: ingest
