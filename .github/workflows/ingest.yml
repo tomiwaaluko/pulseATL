@@ -1,45 +1,39 @@
 name: Ingest
 
-# Runs the Pulse ATL ingest pipeline from a GitHub-hosted runner.
+# Triggers the Pulse ATL ingest by calling the deployed service's admin endpoint.
 #
-# Why this exists: the orchestration sandbox cannot reach Postgres:5432, Snowflake,
-# or the Atlanta data portals, and Render cron jobs require a paid plan. A runner
-# has open egress, so this workflow is the reproducible way to populate the
-# deployed Postgres cache — on a schedule, or on demand.
+# Why it works this way: the pipeline used to run here, on the runner. It cannot.
+# External TLS connections to the Render Postgres instance are terminated for
+# everything outside the service — six client configurations were probed and all
+# failed, while a no-TLS attempt returned a genuine `SSL/TLS required`
+# (SQLSTATE 28000), proving TCP reaches the real database. Render's own MCP query
+# tool hits the same wall. Only the service itself can write to its database, so
+# the runner's job is to ask it to.
 #
-# Required repository secrets (Settings -> Secrets and variables -> Actions):
-#   DATABASE_URL         external Render Postgres URL (must end with ?sslmode=require)
-#   SNOWFLAKE_ACCOUNT    account identifier (e.g. ORG-ACCOUNT or locator.region)
-#   SNOWFLAKE_USER
-#   SNOWFLAKE_PRIVATE_KEY  PKCS#8 PEM (preferred; password auth is MFA-blocked)
-#   SNOWFLAKE_PASSWORD     legacy fallback, only for non-MFA accounts
-#   SNOWFLAKE_WAREHOUSE  e.g. COMPUTE_WH
-#   SNOWFLAKE_DATABASE   e.g. PULSE
-#   GEMINI_API_KEY
-# Secrets are never printed: the run summary below reports counts only.
+# Required repository secret:
+#   INGEST_TOKEN   matches INGEST_TOKEN on the Render service
+#
+# The token is passed as a query parameter, so it is kept out of the URL that
+# gets echoed: curl reads it from a config file on stdin rather than argv.
 
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: "Which ingest path to run"
+      snowflake:
+        description: "Snowflake path"
         type: choice
-        default: seed
+        default: "on"
         options:
-          - seed              # committed fixtures + date shift -> Snowflake -> Postgres
-          - live              # fetch the portals in SOURCES.md (may be slow/blocked)
-          - seed-no-snowflake # fixtures + local stats, skips Snowflake entirely
-  # Pushing anything to this branch runs a seed ingest. It exists because API
-  # tokens without `actions: write` cannot fire workflow_dispatch, but can push.
+          - "on"    # full pipeline: Snowflake MERGE -> stats -> Cortex -> Gemini
+          - "off"   # local aggregation; cortex_findings gets the unavailable marker
+  # Pushing anything to this branch runs an ingest. It exists because API tokens
+  # without `actions: write` cannot fire workflow_dispatch, but can push.
   push:
     branches:
       - ops/run-ingest
 
-  # Hourly schedule is disabled until Snowflake key-pair auth lands: password auth
-  # is blocked by MFA (394509), so every scheduled run failed. Re-enable by
-  # uncommenting once an ingest run succeeds.
-  # schedule:
-  #   - cron: "17 * * * *"
+  schedule:
+    - cron: "17 * * * *"
 
 concurrency:
   group: ingest
@@ -48,55 +42,63 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
+    env:
+      BASE: https://pulse-atl.onrender.com
+      SNOWFLAKE_MODE: ${{ inputs.snowflake || 'on' }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --include=dev
-
-      - name: Build
-        run: npm run build
-
-      - name: Resolve ingest flags
-        id: flags
-        env:
-          MODE: ${{ inputs.mode || 'seed' }}
+      - name: Check the token is configured
         run: |
-          case "$MODE" in
-            seed)              echo "args=--seed" >> "$GITHUB_OUTPUT" ;;
-            live)              echo "args=" >> "$GITHUB_OUTPUT" ;;
-            seed-no-snowflake) echo "args=--seed --no-snowflake" >> "$GITHUB_OUTPUT" ;;
-            *) echo "Unknown mode: $MODE" >&2; exit 1 ;;
-          esac
-          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          if [ -z "${{ secrets.INGEST_TOKEN }}" ]; then
+            echo "::error::INGEST_TOKEN is not set; the endpoint would answer 401"
+            exit 1
+          fi
 
-      - name: Run ingest (${{ steps.flags.outputs.mode }})
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: ${{ secrets.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: PUBLIC
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: npm run ingest -- ${{ steps.flags.outputs.args }}
-
-      - name: Verify deployed cache
-        if: always()
+      - name: Record the current ingest timestamp
+        id: before
         run: |
-          echo "### Ingest (${{ steps.flags.outputs.mode }})" >> "$GITHUB_STEP_SUMMARY"
-          # The service cold-starts on the free plan; give it time to wake up.
-          health=$(curl -s --max-time 90 https://pulse-atl.onrender.com/api/health || echo '{}')
-          echo "health: $health"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          echo "$health" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          health=$(curl -s --max-time 120 "$BASE/api/health" || echo '{}')
+          echo "before=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('last_ingest') or 'none')" 2>/dev/null || echo 'none')" >> "$GITHUB_OUTPUT"
+          echo "health before: $health"
+
+      - name: Trigger the ingest
+        env:
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+        run: |
+          set -o pipefail
+          query="token=$INGEST_TOKEN"
+          if [ "$SNOWFLAKE_MODE" = "off" ]; then query="$query&snowflake=off"; fi
+
+          # --config - reads the URL from stdin, so the token never appears in
+          # argv (visible in `ps`) or in any command echo.
+          printf 'url = "%s/api/admin/ingest?%s"\n' "$BASE" "$query" \
+            | curl -s --max-time 300 --config - > response.json || true
+
+          # The response carries no secrets: it is {ok, snowflake_skipped, counts}
+          # or {ok:false, error} with credentials already redacted server-side.
+          echo "response: $(cat response.json)"
+
+      - name: Confirm the cache actually advanced
+        run: |
+          # The endpoint answers 202 for runs over 20s, so a response alone does
+          # not mean the ingest finished. Poll until last_ingest moves.
+          before='${{ steps.before.outputs.before }}'
+          echo "waiting for last_ingest to move from: $before"
+          for _ in $(seq 1 30); do
+            health=$(curl -s --max-time 60 "$BASE/api/health" || echo '{}')
+            now=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('last_ingest') or 'none')" 2>/dev/null || echo 'none')
+            rows=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('row_count','?'))" 2>/dev/null || echo '?')
+            if [ "$now" != "$before" ] && [ "$now" != "none" ]; then
+              echo "::notice::ingest completed at $now ($rows rows)"
+              {
+                echo "### Ingest complete"
+                echo '```json'
+                echo "$health"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::last_ingest never advanced past $before"
+          exit 1

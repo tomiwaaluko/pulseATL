@@ -84,6 +84,17 @@ Postgres — `--seed` only changes where the *input rows* come from):
 | `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE` | connection defaults | optional |
 | `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
 
+### Scheduled and on-demand ingest
+
+`.github/workflows/ingest.yml` runs hourly and on demand. It does **not** run the
+pipeline on the runner — external TLS to the Render Postgres instance is
+terminated for everything outside the service, so only the service can write to
+its own database. The workflow calls the admin endpoint below instead, then
+polls `/api/health` until `last_ingest` advances, because the endpoint answers
+202 for runs longer than 20 seconds and a response alone does not mean the run
+finished. It needs an `INGEST_TOKEN` repository secret matching the one on the
+service.
+
 ### Demo-only: triggering ingest over HTTP
 
 `GET /api/admin/ingest?token=<INGEST_TOKEN>` runs the same seed ingest as
