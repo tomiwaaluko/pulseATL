@@ -1,0 +1,88 @@
+name: Diag Postgres
+
+# Diagnostic-only: tries several Postgres connection configurations and prints
+# the full error for each, because "Connection terminated unexpectedly" carries
+# no code or cause. Trigger by pushing to ops/diag-postgres. Safe to delete once
+# connectivity is settled. Never prints the password.
+
+on:
+  push:
+    branches:
+      - ops/diag-postgres
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --include=dev
+
+      - name: Probe Postgres connection modes
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cat > diag-pg.mjs <<'SCRIPT'
+          import { Client } from 'pg';
+          import net from 'node:net';
+
+          const raw = process.env.DATABASE_URL ?? '';
+          if (raw === '') { console.log('DATABASE_URL is empty'); process.exit(0); }
+
+          // Describe the target without leaking the password.
+          const u = new URL(raw);
+          console.log('host    :', u.hostname);
+          console.log('port    :', u.port || '(default 5432)');
+          console.log('database:', u.pathname.replace(/^\//, ''));
+          console.log('user    :', u.username);
+          console.log('params  :', u.search || '(none)');
+          console.log('host has dots (public):', u.hostname.includes('.'));
+
+          // Can we even open a TCP socket?
+          const port = Number(u.port || 5432);
+          const tcp = await new Promise((resolve) => {
+            const s = net.createConnection({ host: u.hostname, port, timeout: 8000 });
+            s.on('connect', () => { s.destroy(); resolve('OPEN'); });
+            s.on('timeout', () => { s.destroy(); resolve('TIMEOUT'); });
+            s.on('error', (e) => resolve(`ERR ${e.code || e.message}`));
+          });
+          console.log('tcp     :', tcp);
+
+          const stripped = new URL(raw);
+          stripped.search = '';
+
+          const attempts = [
+            ['as configured', { connectionString: raw }],
+            ['no params + ssl reject:false', { connectionString: stripped.toString(), ssl: { rejectUnauthorized: false } }],
+            ['no params + ssl true', { connectionString: stripped.toString(), ssl: true }],
+            ['sslmode=no-verify', { connectionString: `${stripped.toString()}?sslmode=no-verify` }],
+            ['libpq compat', { connectionString: `${stripped.toString()}?uselibpqcompat=true&sslmode=require` }],
+            ['no ssl at all', { connectionString: stripped.toString() }],
+          ];
+
+          for (const [label, config] of attempts) {
+            const client = new Client({ ...config, connectionTimeoutMillis: 8000 });
+            try {
+              await client.connect();
+              const r = await client.query('select current_database() as db, version() as v');
+              console.log(`\n=== ${label}: SUCCESS -> ${r.rows[0].db} | ${String(r.rows[0].v).slice(0, 40)}`);
+              await client.end();
+            } catch (e) {
+              console.log(`\n=== ${label}: FAIL`);
+              console.log('   message:', e?.message);
+              console.log('   code   :', e?.code);
+              console.log('   errno  :', e?.errno, e?.syscall);
+              console.log('   cause  :', e?.cause?.message ?? e?.cause);
+              try { await client.end(); } catch {}
+            }
+          }
+          process.exit(0);
+          SCRIPT
+          node diag-pg.mjs
+        working-directory: backend
+        continue-on-error: true

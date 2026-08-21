@@ -4,8 +4,32 @@ import type { Report } from "./types";
 
 let pool: Pool | undefined;
 
+/**
+ * Managed Postgres (Render, Heroku, Neon, ...) requires TLS on its public
+ * hostname but presents a certificate chain Node does not trust by default.
+ * `pg` v8.16+ tightened `sslmode=require` toward verify-full semantics, so the
+ * handshake can fail and surface only as "Connection terminated unexpectedly".
+ *
+ * Connections inside the provider's own network (Render's internal hostname has
+ * no dots) need no TLS at all, so only opt in for public hosts.
+ */
+function sslFor(connectionString: string): { rejectUnauthorized: boolean } | undefined {
+  try {
+    const host = new URL(connectionString).hostname;
+    return host.includes(".") ? { rejectUnauthorized: false } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function getPool(): Pool {
-  pool ??= new Pool({ connectionString: getConfig().DATABASE_URL });
+  if (pool === undefined) {
+    const connectionString = getConfig().DATABASE_URL;
+    const ssl = sslFor(connectionString);
+    pool = new Pool(ssl === undefined ? { connectionString } : { connectionString, ssl });
+    // An idle client erroring out must not take the process down.
+    pool.on("error", (error) => console.error(`[db] idle client error: ${error.message}`));
+  }
   return pool;
 }
 

@@ -68,6 +68,9 @@ npm run ingest -- --seed
 
 # live mode: fetch the endpoints documented in backend/src/ingest/SOURCES.md
 npm run ingest
+
+# demo-insurance mode: never touch Snowflake at all (see below)
+npm run ingest -- --no-snowflake
 ```
 
 Required environment for a real run (both modes still write to Snowflake and
@@ -76,9 +79,57 @@ Postgres — `--seed` only changes where the *input rows* come from):
 | Variable | Needed for | Behaviour when missing |
 | --- | --- | --- |
 | `DATABASE_URL` | Postgres `reports` cache | required — the run fails |
-| `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD` | incident load + stats | required — the run fails |
+| `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` | incident load + stats | required — the run fails |
+| `SNOWFLAKE_PRIVATE_KEY` (+ optional `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`) or `SNOWFLAKE_PASSWORD` | Snowflake auth | one of the two is required — the run fails naming both if neither is set |
 | `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE` | connection defaults | optional |
 | `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
+
+### Demo-only: triggering ingest over HTTP
+
+`GET /api/admin/ingest?token=<INGEST_TOKEN>` runs the same seed ingest as
+`npm run ingest -- --seed`, but from the already-deployed service — for
+environments (like a demo host) where nothing outside the service can reach
+Postgres/Snowflake directly. It is a demo convenience, not a general admin
+API: the route is **disabled (404) unless `INGEST_TOKEN` is set**, requires
+the token as a query param, and only ever runs the seed pipeline. Do not set
+`INGEST_TOKEN` in a deployment you don't want this reachable on.
+
+Adding `&snowflake=off` runs the `--no-snowflake` path described below
+instead. Use it when the deployed service is the only host that can reach
+Postgres *and* its Snowflake credentials are the broken part — otherwise
+there is no way to populate the cache at all. The response reports which
+path ran as `snowflake_skipped`, and `cortex_findings` carries the
+unavailable marker rather than a Cortex narrative, so a run made this way is
+never mistaken for a full one.
+
+### Snowflake authentication: key-pair vs. password
+
+Snowflake accounts with MFA enforced reject password authentication for
+programmatic/API clients — Snowflake returns error `394509` ("MFA
+authentication is required, but none of your current MFA methods are
+supported for programmatic authentication"). Key-pair authentication
+(`SNOWFLAKE_JWT`) is the supported workaround: it authenticates a dedicated
+service user with an RSA key pair instead of a password, and isn't subject
+to MFA.
+
+To use it:
+
+1. Generate an RSA key pair (PKCS#8, unencrypted or passphrase-protected):
+   ```bash
+   openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+   openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
+   ```
+2. Assign the public key to the Snowflake service user (`ALTER USER <user>
+   SET RSA_PUBLIC_KEY='<contents of rsa_key.pub, header/footer stripped>';`).
+3. Set `SNOWFLAKE_PRIVATE_KEY` to the full contents of `rsa_key.p8` (the
+   `-----BEGIN PRIVATE KEY-----` PEM block). If your secret store collapses
+   the key to one line with literal `\n` sequences instead of real
+   newlines, that's handled automatically — no manual re-formatting needed.
+   Set `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` too if the key is encrypted.
+
+`snowflakeClient.ts` prefers `SNOWFLAKE_PRIVATE_KEY` when present and falls
+back to `SNOWFLAKE_PASSWORD` (legacy, non-MFA accounts only) otherwise; if
+neither is set, it throws naming both variables.
 
 Notes:
 
@@ -94,6 +145,16 @@ Notes:
 - **All 25 NPUs get a row.** NPUs with no incidents are scored from a synthesized
   zero-count stats entry inside the full 25-element array that `computePulse`
   z-scores against.
+- **`--no-snowflake` (demo insurance).** Skips `loadIncidents` and
+  `computeNpuStats` entirely — nothing on this path ever reaches Snowflake, so a
+  bad trial account or credential typo on demo night can't zero out the
+  dashboard. It always reads and date-shifts the committed fixtures (like
+  `--seed`, regardless of whether `--seed` is also passed), aggregates
+  `NpuStats` locally in TypeScript (`backend/src/ingest/localStats.ts`), and
+  writes the literal `[cortex-unavailable] Snowflake Cortex was not reachable
+  for this run.` to `cortex_findings`. Postgres and Gemini still run
+  normally. Use it only as a fallback when Snowflake itself is the thing that's
+  broken — the default path is unchanged and should stay the primary route.
 - **Live fetchers may be blocked.** The fetchers target the endpoints in
   `SOURCES.md`; some sandboxes and CI runners block that egress. Unit tests never
   hit the network — they run against the committed fixtures. Verified once from

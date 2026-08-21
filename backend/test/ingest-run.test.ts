@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  NO_SNOWFLAKE_CORTEX_MESSAGE,
   REPORT_PLACEHOLDER,
   fullNpuStats,
   parseArgs,
@@ -85,8 +86,13 @@ function harness(overrides: Partial<IngestDeps> = {}): Harness {
 
 describe("parseArgs", () => {
   it("defaults to live sources and enables seed mode with --seed", () => {
-    expect(parseArgs([])).toEqual({ seed: false });
-    expect(parseArgs(["--seed"])).toEqual({ seed: true });
+    expect(parseArgs([])).toEqual({ seed: false, noSnowflake: false });
+    expect(parseArgs(["--seed"])).toEqual({ seed: true, noSnowflake: false });
+  });
+
+  it("enables the no-snowflake fallback with --no-snowflake", () => {
+    expect(parseArgs(["--no-snowflake"])).toEqual({ seed: false, noSnowflake: true });
+    expect(parseArgs(["--seed", "--no-snowflake"])).toEqual({ seed: true, noSnowflake: true });
   });
 });
 
@@ -206,5 +212,86 @@ describe("runIngest --seed", () => {
     expect(reports.size).toBe(25);
     expect(second.incidents).toBe(first.incidents);
     expect(new Map([...reports].map(([npu, report]) => [npu, report.pulse_score]))).toEqual(scores);
+  });
+});
+
+describe("runIngest --no-snowflake", () => {
+  it("writes a valid report row for every NPU without calling any Snowflake dep", async () => {
+    const { deps, reports } = harness();
+    const summary = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(summary.npusReported).toBe(25);
+    expect(reports.size).toBe(25);
+    expect([...reports.keys()].sort()).toEqual(listNpus());
+    // No Snowflake dep is ever reached on this path — a bad account/credentials
+    // must not stop the demo from having reports.
+    expect(deps.ensureSchema).not.toHaveBeenCalled();
+    expect(deps.loadIncidents).not.toHaveBeenCalled();
+    expect(deps.computeNpuStats).not.toHaveBeenCalled();
+    expect(deps.cortexFindings).not.toHaveBeenCalled();
+
+    for (const report of reports.values()) {
+      expect(Number.isFinite(report.pulse_score)).toBe(true);
+      expect(report.pulse_score).toBeGreaterThanOrEqual(0);
+      expect(report.pulse_score).toBeLessThanOrEqual(100);
+      expect(["improving", "stable", "worsening"]).toContain(report.trend);
+      expect(report.cortex_findings).toBe(NO_SNOWFLAKE_CORTEX_MESSAGE);
+      expect(report.updated_at).toEqual(NOW);
+      expect((report.stats_json as NpuStats).npu).toBe(report.npu);
+    }
+  });
+
+  it("always fixtures-and-shifts even when --seed was not also passed", async () => {
+    const { deps, reports, logs } = harness();
+    await runIngest(deps, { seed: false, noSnowflake: true });
+
+    const active = [...reports.values()].filter(
+      (report) => (report.stats_json as NpuStats).incident_count_90d > 0,
+    );
+    expect(active.length).toBeGreaterThan(5);
+    expect(logs.some((line) => line.includes("[apd_crime]") && line.includes("rows read"))).toBe(true);
+    expect(logs.some((line) => line.includes("[atl311] 250 rows read, 0 normalized, 250 rejected"))).toBe(true);
+  });
+
+  it("leaves median_resolution_days null (not 0) for NPUs with no resolved incidents", async () => {
+    const { deps, reports } = harness();
+    await runIngest(deps, { seed: false, noSnowflake: true });
+
+    // The committed APD fixture never carries a resolved_at, so every NPU's
+    // median must stay null rather than being coerced to 0.
+    for (const report of reports.values()) {
+      expect((report.stats_json as NpuStats).median_resolution_days).toBeNull();
+    }
+  });
+
+  it("is idempotent: a second run rewrites the same 25 rows", async () => {
+    const { deps, reports } = harness();
+    const first = await runIngest(deps, { seed: false, noSnowflake: true });
+    const scores = new Map([...reports].map(([npu, report]) => [npu, report.pulse_score]));
+
+    const second = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(reports.size).toBe(25);
+    expect(second.incidents).toBe(first.incidents);
+    expect(second.npusReported).toBe(25);
+    expect(new Map([...reports].map(([npu, report]) => [npu, report.pulse_score]))).toEqual(scores);
+  });
+
+  it("writes the placeholder narrative when Gemini is unconfigured", async () => {
+    const { deps, reports } = harness();
+    const summary = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(summary.geminiReports).toBe(0);
+    expect([...reports.values()].every((report) => report.gemini_report === REPORT_PLACEHOLDER)).toBe(true);
+  });
+
+  it("still calls Gemini when a key is configured", async () => {
+    const generateReport = vi.fn(async (npu: string) => `Report for ${npu}`);
+    const { deps, reports } = harness({ generateReport });
+    const summary = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(generateReport).toHaveBeenCalledTimes(25);
+    expect(summary.geminiReports).toBe(25);
+    expect(reports.get("A")?.gemini_report).toBe("Report for A");
   });
 });

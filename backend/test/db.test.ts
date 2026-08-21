@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const query = vi.fn();
 
 vi.mock("pg", () => ({
-  Pool: vi.fn(() => ({ query })),
+  // `on` mirrors the real pg.Pool EventEmitter surface: db.ts attaches an
+  // idle-client error handler so a dropped connection cannot crash the process.
+  Pool: vi.fn(() => ({ query, on: vi.fn() })),
 }));
 
 import { getAllReports, getReport, initSchema, upsertReport } from "../src/db";

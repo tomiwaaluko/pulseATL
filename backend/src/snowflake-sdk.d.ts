@@ -7,7 +7,10 @@ declare module "snowflake-sdk" {
   export interface ConnectionOptions {
     account: string;
     username: string;
-    password: string;
+    password?: string;
+    authenticator?: string;
+    privateKey?: string;
+    privateKeyPass?: string;
     warehouse?: string;
     database?: string;
     schema?: string;
