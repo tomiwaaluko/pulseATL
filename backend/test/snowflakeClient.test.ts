@@ -120,3 +120,87 @@ describe("sfQuery", () => {
     expect(createConnection).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("sfQuery auth selection", () => {
+  beforeEach(async () => {
+    await closeSnowflake();
+    vi.clearAllMocks();
+    connect.mockImplementation((cb) => cb(undefined, {}));
+    destroy.mockImplementation((cb) => cb(undefined));
+    delete process.env.SNOWFLAKE_PASSWORD;
+    delete process.env.SNOWFLAKE_PRIVATE_KEY;
+    delete process.env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE;
+    Object.assign(process.env, {
+      SNOWFLAKE_ACCOUNT: "acct",
+      SNOWFLAKE_USER: "user",
+    });
+  });
+
+  it("uses key-pair auth when SNOWFLAKE_PRIVATE_KEY is present, without a password", async () => {
+    process.env.SNOWFLAKE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----";
+    respondWith([]);
+
+    await sfQuery("SELECT 1");
+
+    const options = createConnection.mock.calls[0][0];
+    expect(options).toMatchObject({
+      authenticator: "SNOWFLAKE_JWT",
+      privateKey: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----",
+    });
+    expect(options).not.toHaveProperty("password");
+  });
+
+  it("passes privateKeyPass when SNOWFLAKE_PRIVATE_KEY_PASSPHRASE is set", async () => {
+    process.env.SNOWFLAKE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----";
+    process.env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE = "hunter2";
+    respondWith([]);
+
+    await sfQuery("SELECT 1");
+
+    expect(createConnection.mock.calls[0][0]).toMatchObject({
+      authenticator: "SNOWFLAKE_JWT",
+      privateKeyPass: "hunter2",
+    });
+  });
+
+  it("normalizes literal \\n sequences in the private key to real newlines", async () => {
+    process.env.SNOWFLAKE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----";
+    respondWith([]);
+
+    await sfQuery("SELECT 1");
+
+    expect(createConnection.mock.calls[0][0]).toMatchObject({
+      privateKey: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----",
+    });
+  });
+
+  it("falls back to password auth when no private key is set (unchanged legacy behavior)", async () => {
+    process.env.SNOWFLAKE_PASSWORD = "secret";
+    respondWith([]);
+
+    await sfQuery("SELECT 1");
+
+    const options = createConnection.mock.calls[0][0];
+    expect(options).toMatchObject({ password: "secret" });
+    expect(options).not.toHaveProperty("authenticator");
+    expect(options).not.toHaveProperty("privateKey");
+  });
+
+  it("prefers key-pair auth over password when both are present", async () => {
+    process.env.SNOWFLAKE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----";
+    process.env.SNOWFLAKE_PASSWORD = "secret";
+    respondWith([]);
+
+    await sfQuery("SELECT 1");
+
+    const options = createConnection.mock.calls[0][0];
+    expect(options).toMatchObject({ authenticator: "SNOWFLAKE_JWT" });
+    expect(options).not.toHaveProperty("password");
+  });
+
+  it("throws naming both env vars when neither auth method is configured", async () => {
+    await expect(sfQuery("SELECT 1")).rejects.toThrow(/SNOWFLAKE_PRIVATE_KEY/);
+    await expect(sfQuery("SELECT 1")).rejects.toThrow(/SNOWFLAKE_PASSWORD/);
+    expect(createConnection).not.toHaveBeenCalled();
+  });
+});
