@@ -68,6 +68,9 @@ npm run ingest -- --seed
 
 # live mode: fetch the endpoints documented in backend/src/ingest/SOURCES.md
 npm run ingest
+
+# demo-insurance mode: never touch Snowflake at all (see below)
+npm run ingest -- --no-snowflake
 ```
 
 Required environment for a real run (both modes still write to Snowflake and
@@ -124,6 +127,16 @@ Notes:
 - **All 25 NPUs get a row.** NPUs with no incidents are scored from a synthesized
   zero-count stats entry inside the full 25-element array that `computePulse`
   z-scores against.
+- **`--no-snowflake` (demo insurance).** Skips `loadIncidents` and
+  `computeNpuStats` entirely — nothing on this path ever reaches Snowflake, so a
+  bad trial account or credential typo on demo night can't zero out the
+  dashboard. It always reads and date-shifts the committed fixtures (like
+  `--seed`, regardless of whether `--seed` is also passed), aggregates
+  `NpuStats` locally in TypeScript (`backend/src/ingest/localStats.ts`), and
+  writes the literal `[cortex-unavailable] Snowflake Cortex was not reachable
+  for this run.` to `cortex_findings`. Postgres and Gemini still run
+  normally. Use it only as a fallback when Snowflake itself is the thing that's
+  broken — the default path is unchanged and should stay the primary route.
 - **Live fetchers may be blocked.** The fetchers target the endpoints in
   `SOURCES.md`; some sandboxes and CI runners block that egress. Unit tests never
   hit the network — they run against the committed fixtures. Verified once from
