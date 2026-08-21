@@ -1,0 +1,76 @@
+name: Resample ATL311 fixture
+
+# Rebuilds the ATL311 fixture from the full 2015 export, then geocodes it, then
+# commits both in one commit.
+#
+# Both steps run together on purpose: resampling replaces every row, which drops
+# the coordinates the previous geocode run resolved. Committing between the two
+# would leave a fixture whose rows all fail the NPU join — the exact state
+# PULSE-19 existed to fix.
+#
+# Needs a runner because the orchestration sandbox's proxy blocks both the
+# archive host and geocoding.geo.census.gov. No secrets: both sources are public.
+#
+# Trigger by pushing to ops/run-resample, or from the Actions tab.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ops/run-resample
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atl311-fixture
+  cancel-in-progress: false
+
+jobs:
+  resample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --include=dev
+
+      - name: Resample from the full export
+        run: npm run resample:atl311 --workspace=backend | tee "$RUNNER_TEMP/resample.txt"
+
+      - name: Geocode the new sample
+        run: npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode.txt"
+
+      - name: Run the test suite against the new fixture
+        run: npm test
+
+      - name: Publish run summary
+        if: always()
+        run: |
+          {
+            echo "### Resample"
+            echo '```'
+            cat "$RUNNER_TEMP/resample.txt" 2>/dev/null || echo "(did not run)"
+            echo '```'
+            echo "### Geocode"
+            echo '```'
+            cat "$RUNNER_TEMP/geocode.txt" 2>/dev/null || echo "(did not run)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the rebuilt fixture
+        run: |
+          git config user.name "pulse-atl-bot"
+          git config user.email "pulse-atl-bot@users.noreply.github.com"
+          if git diff --quiet -- backend/test/fixtures/atl311_service_requests.sample.json; then
+            echo "Fixture unchanged, nothing to commit."
+            exit 0
+          fi
+          git add backend/test/fixtures/atl311_service_requests.sample.json
+          git commit -m "[PULSE-19] Resample ATL311 fixture across a 90-day window and geocode it"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
