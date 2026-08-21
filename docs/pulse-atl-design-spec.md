@@ -15,7 +15,7 @@ Consumes: `pulse-atl-ideation-spec.md`. Every open question from §13 is resolve
 | Ingest | **TS job on Render Workflows** (fallback: Render Cron Job if Workflows SDK blocks) | Prize requires Workflows; fallback protects the demo |
 | App DB | **Render Postgres** — cache of computed reports + chat context | Keeps dashboard fast + survives Snowflake trial hiccups during live demo |
 | Warehouse | **Snowflake trial** via `snowflake-sdk` (Node); **Cortex** via `SNOWFLAKE.CORTEX.COMPLETE` in SQL | Hits "Snowflake API + LLMs" prize language directly |
-| Gemini | **gemini-2.0-flash** via `@google/genai` SDK | Fast + cheap; reports and chat |
+| Gemini | **gemini-2.5-flash** via `@google/genai` SDK (override with `GEMINI_MODEL`) | Fast + cheap; reports and chat. Was `gemini-2.0-flash`, which Google has since retired — it is no longer in the models list the API key can reach, so every call returned `ApiError`. |
 | Styling | Tailwind CDN-free (vite plugin), dark map-first UI | Agents move fastest in Tailwind |
 | Repo | Monorepo, single Render Blueprint (`render.yaml`) | One-command infra |
 

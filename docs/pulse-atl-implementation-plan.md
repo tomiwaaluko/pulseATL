@@ -128,7 +128,7 @@ cortexFindings(stats: NpuStats, cityMedians: CityMedians): Promise<string>  // C
 generateReport(npu: string, stats: NpuStats, cortexFindings: string): Promise<string> // markdown, ≤200 words, sections: headline/trend/top issues/contact
 chatAnswer(npu: string, question: string, history: ChatTurn[], stats: NpuStats): Promise<string>
 ```
-System prompts pin answers to provided data; refuse out-of-data speculation. Model: `gemini-2.0-flash`.
+System prompts pin answers to provided data; refuse out-of-data speculation. Model: `gemini-2.5-flash` (override with `GEMINI_MODEL`; `gemini-2.0-flash` has been retired).
 **Accept:** mocked tests assert prompt includes stats JSON; one real-API smoke script output pasted in PR.
 
 ### T8 [P0 · terra-medium · deps: T5,T7] API routes + server
