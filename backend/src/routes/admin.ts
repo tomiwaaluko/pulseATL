@@ -1,0 +1,100 @@
+import crypto from "crypto";
+import { Router } from "express";
+
+import { defaultDeps, runIngest } from "../ingest/run";
+
+const SECRET_ENV_VARS = ["INGEST_TOKEN", "SNOWFLAKE_PASSWORD", "DATABASE_URL", "GEMINI_API_KEY"] as const;
+
+/** Ingest runs take minutes; the route responds early rather than holding the connection open. */
+const RESPONSE_DEADLINE_MS = 20_000;
+
+let running = false;
+
+function timingSafeTokenMatch(provided: string, expected: string): boolean {
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  if (providedBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
+/** Strips known secret env var values (and generic `scheme://user:pass@host` credentials) from an error message. */
+function redactSecrets(message: string): string {
+  let redacted = message.replace(/:\/\/[^\s@/]+@/g, "://***@");
+  for (const key of SECRET_ENV_VARS) {
+    const value = process.env[key];
+    if (value) redacted = redacted.split(value).join("***");
+  }
+  return redacted;
+}
+
+interface IngestSuccessPayload {
+  ok: true;
+  reports_written: number;
+  normalized: number;
+  rejected: number;
+  duration_ms: number;
+}
+
+interface IngestFailurePayload {
+  ok: false;
+  error: string;
+}
+
+export const adminRouter = Router();
+
+adminRouter.get("/ingest", (req, res) => {
+  const expected = process.env.INGEST_TOKEN;
+  if (!expected) {
+    res.status(404).end();
+    return;
+  }
+
+  const provided = typeof req.query.token === "string" ? req.query.token : "";
+  if (!timingSafeTokenMatch(provided, expected)) {
+    res.status(401).json({ detail: "unauthorized" });
+    return;
+  }
+
+  if (running) {
+    res.status(409).json({ detail: "ingest already running" });
+    return;
+  }
+
+  running = true;
+  const startedAt = Date.now();
+  console.log("[admin-ingest] starting seed ingest");
+
+  const result: Promise<IngestSuccessPayload | IngestFailurePayload> = runIngest(defaultDeps(), { seed: true }).then(
+    (summary) => {
+      const normalized = summary.sources.reduce((sum, source) => sum + source.normalized, 0);
+      const rejected = summary.sources.reduce((sum, source) => sum + source.rejected, 0);
+      const payload: IngestSuccessPayload = {
+        ok: true,
+        reports_written: summary.npusReported,
+        normalized,
+        rejected,
+        duration_ms: Date.now() - startedAt,
+      };
+      console.log(`[admin-ingest] done: ${JSON.stringify(payload)}`);
+      return payload;
+    },
+    (error: unknown) => {
+      const message = redactSecrets(error instanceof Error ? error.message : String(error));
+      console.error(`[admin-ingest] failed: ${message}`);
+      return { ok: false, error: message } satisfies IngestFailurePayload;
+    },
+  );
+  result.finally(() => {
+    running = false;
+  });
+
+  result.then((payload) => {
+    if (res.headersSent) return;
+    res.status(payload.ok ? 200 : 500).json(payload);
+  });
+
+  setTimeout(() => {
+    if (res.headersSent) return;
+    res.status(202).json({ ok: true, started: true });
+  }, RESPONSE_DEADLINE_MS);
+});

@@ -82,6 +82,16 @@ Postgres — `--seed` only changes where the *input rows* come from):
 | `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` | incident load + stats | required — the run fails |
 | `SNOWFLAKE_PRIVATE_KEY` (+ optional `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`) or `SNOWFLAKE_PASSWORD` | Snowflake auth | one of the two is required — the run fails naming both if neither is set |
 | `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE` | connection defaults | optional |
+
+### Demo-only: triggering ingest over HTTP
+
+`GET /api/admin/ingest?token=<INGEST_TOKEN>` runs the same seed ingest as
+`npm run ingest -- --seed`, but from the already-deployed service — for
+environments (like a demo host) where nothing outside the service can reach
+Postgres/Snowflake directly. It is a demo convenience, not a general admin
+API: the route is **disabled (404) unless `INGEST_TOKEN` is set**, requires
+the token as a query param, and only ever runs the seed pipeline. Do not set
+`INGEST_TOKEN` in a deployment you don't want this reachable on.
 | `GEMINI_API_KEY` | report narratives | reports are written with the literal placeholder `[report pending]`, never a fabricated narrative |
 
 ### Snowflake authentication: key-pair vs. password
