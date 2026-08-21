@@ -9,7 +9,8 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "ingest": "tsx src/ingest/run.ts",
-    "smoke:snowflake": "tsx scripts/smoke-snowflake.ts"
+    "smoke:snowflake": "tsx scripts/smoke-snowflake.ts",
+    "geocode:atl311": "tsx scripts/geocode-atl311.ts"
   },
   "dependencies": {
     "@google/genai": "^2.16.0",

@@ -52,10 +52,11 @@ async function fetchBuffer(url: string): Promise<Buffer> {
 }
 
 /**
- * RFC 4180 CSV reader. Both selected portals publish CSV (directly or inside an
- * archive) and quoted fields carry commas and newlines, so a naive split loses rows.
+ * RFC 4180 row splitter, header-agnostic. Both the source portals and the Census
+ * batch geocoder publish CSV where quoted fields carry commas and newlines, so a
+ * naive split loses rows.
  */
-export function parseCsv(text: string): RawRecord[] {
+export function parseCsvRows(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -89,6 +90,12 @@ export function parseCsv(text: string): RawRecord[] {
   }
   if (field !== "" || row.length) endRow();
 
+  return rows;
+}
+
+/** RFC 4180 CSV reader that maps rows onto their header row. */
+export function parseCsv(text: string): RawRecord[] {
+  const rows = parseCsvRows(text);
   const header = rows.shift();
   if (!header) return [];
   return rows.map((values) => {
