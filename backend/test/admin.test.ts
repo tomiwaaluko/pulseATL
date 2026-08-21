@@ -82,12 +82,35 @@ describe("GET /api/admin/ingest", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       ok: true,
+      snowflake_skipped: false,
       reports_written: 25,
       normalized: 23,
       rejected: 2,
       duration_ms: expect.any(Number),
     });
-    expect(runIngest).toHaveBeenCalledWith(expect.anything(), { seed: true });
+    expect(runIngest).toHaveBeenCalledWith(expect.anything(), { seed: true, noSnowflake: false });
+  });
+
+  it("runs the no-snowflake path when snowflake=off is supplied", async () => {
+    process.env.INGEST_TOKEN = "correct-token";
+    runIngest.mockResolvedValue(SUMMARY_STUB);
+
+    const res = await request(createApp()).get("/api/admin/ingest?token=correct-token&snowflake=off");
+
+    expect(res.status).toBe(200);
+    expect(res.body.snowflake_skipped).toBe(true);
+    expect(runIngest).toHaveBeenCalledWith(expect.anything(), { seed: true, noSnowflake: true });
+  });
+
+  it("keeps Snowflake enabled for any other snowflake= value", async () => {
+    process.env.INGEST_TOKEN = "correct-token";
+    runIngest.mockResolvedValue(SUMMARY_STUB);
+
+    const res = await request(createApp()).get("/api/admin/ingest?token=correct-token&snowflake=on");
+
+    expect(res.status).toBe(200);
+    expect(res.body.snowflake_skipped).toBe(false);
+    expect(runIngest).toHaveBeenCalledWith(expect.anything(), { seed: true, noSnowflake: false });
   });
 
   it("returns 500 with a redacted error when the ingest run throws", async () => {
