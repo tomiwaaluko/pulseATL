@@ -32,7 +32,9 @@
     "Closed": "9/17/2015 9:38",
     "Priority": "3-Medium",
     "Closed By Login": "JEDODSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:36",
@@ -67,7 +69,9 @@
     "Closed": "9/17/2015 9:36",
     "Priority": "3-Medium",
     "Closed By Login": "RJWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:36",
@@ -102,7 +106,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.866119603231,
+    "longitude": -84.417218100398
   },
   {
     "Opened": "9/17/2015 9:35",
@@ -137,7 +143,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.721592638296,
+    "longitude": -84.457142168317
   },
   {
     "Opened": "9/17/2015 9:35",
@@ -172,7 +180,9 @@
     "Closed": "9/17/2015 9:36",
     "Priority": "3-Medium",
     "Closed By Login": "NABROWN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.749571938213,
+    "longitude": -84.424398025379
   },
   {
     "Opened": "9/17/2015 9:33",
@@ -207,7 +217,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.72620197852,
+    "longitude": -84.492883361378
   },
   {
     "Opened": "9/17/2015 9:33",
@@ -242,7 +254,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.674317534077,
+    "longitude": -84.410630561973
   },
   {
     "Opened": "9/17/2015 9:33",
@@ -277,7 +291,9 @@
     "Closed": "9/17/2015 9:34",
     "Priority": "3-Medium",
     "Closed By Login": "JEDODSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.727369880758,
+    "longitude": -84.43827125716
   },
   {
     "Opened": "9/17/2015 9:32",
@@ -312,7 +328,9 @@
     "Closed": "9/17/2015 9:33",
     "Priority": "3-Medium",
     "Closed By Login": "SKMUHAMMAD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:32",
@@ -347,7 +365,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -382,7 +402,9 @@
     "Closed": "9/17/2015 9:35",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -417,7 +439,9 @@
     "Closed": "9/17/2015 9:35",
     "Priority": "3-Medium",
     "Closed By Login": "RJWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -452,7 +476,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -487,7 +513,9 @@
     "Closed": "9/17/2015 9:33",
     "Priority": "3-Medium",
     "Closed By Login": "ASNEAL",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -522,7 +550,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.796220851633,
+    "longitude": -84.397937518924
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -557,7 +587,9 @@
     "Closed": "9/17/2015 9:32",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:31",
@@ -592,7 +624,9 @@
     "Closed": "9/17/2015 9:34",
     "Priority": "3-Medium",
     "Closed By Login": "BANDERSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:30",
@@ -627,7 +661,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.747304645929,
+    "longitude": -84.308761146145
   },
   {
     "Opened": "9/17/2015 9:30",
@@ -662,7 +698,9 @@
     "Closed": "9/17/2015 9:32",
     "Priority": "3-Medium",
     "Closed By Login": "NABROWN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.836097875421,
+    "longitude": -84.392594949553
   },
   {
     "Opened": "9/17/2015 9:30",
@@ -697,7 +735,9 @@
     "Closed": "9/17/2015 9:34",
     "Priority": "3-Medium",
     "Closed By Login": "LGREEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:30",
@@ -732,7 +772,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "jacobs"
+    "Contact Business Name": "jacobs",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:29",
@@ -767,7 +809,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "jacobs"
+    "Contact Business Name": "jacobs",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:29",
@@ -802,7 +846,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.815918687475,
+    "longitude": -84.381117280355
   },
   {
     "Opened": "9/17/2015 9:28",
@@ -837,7 +883,9 @@
     "Closed": "9/17/2015 9:34",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.771122267921,
+    "longitude": -84.460291187747
   },
   {
     "Opened": "9/17/2015 9:27",
@@ -872,7 +920,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "jacobs"
+    "Contact Business Name": "jacobs",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:27",
@@ -884,7 +934,7 @@
     "Sub Area": "",
     "KBA Id": "1-417V7",
     "Closed By Name": "Rashida Carson",
-    "Summary": "SR#129180218  ATL311 Back Office: Customer Mailing Address Change for Water and Sewer Account  ATTACHMENT:  Letter  ATL311 Back Office Response:  For security purposes, the City of Atlanta Department of Watershed Management cannot disclose any information or perform any maintenance unless all of the following account information is provided: \u2022Last 4 digits Social Security Number or Tax Identification \u2022Mailing Address \u2022Service Address or Account Number  \u2022Telephone Number",
+    "Summary": "SR#129180218  ATL311 Back Office: Customer Mailing Address Change for Water and Sewer Account  ATTACHMENT:  Letter  ATL311 Back Office Response:  For security purposes, the City of Atlanta Department of Watershed Management cannot disclose any information or perform any maintenance unless all of the following account information is provided: •Last 4 digits Social Security Number or Tax Identification •Mailing Address •Service Address or Account Number  •Telephone Number",
     "Status": "Closed",
     "Substatus": "Complete",
     "Request Type": "Service Request - Fulfillment",
@@ -907,7 +957,9 @@
     "Closed": "9/17/2015 9:35",
     "Priority": "3-Medium",
     "Closed By Login": "RACARSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.733220363608,
+    "longitude": -84.398416687476
   },
   {
     "Opened": "9/17/2015 9:26",
@@ -942,7 +994,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "Jacobs"
+    "Contact Business Name": "Jacobs",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:26",
@@ -977,7 +1031,9 @@
     "Closed": "9/17/2015 9:26",
     "Priority": "3-Medium",
     "Closed By Login": "NMWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:25",
@@ -1012,7 +1068,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.774256973456,
+    "longitude": -84.493782954216
   },
   {
     "Opened": "9/17/2015 9:25",
@@ -1047,7 +1105,9 @@
     "Closed": "9/17/2015 9:28",
     "Priority": "3-Medium",
     "Closed By Login": "MAASCOTT",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:25",
@@ -1082,7 +1142,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "Jacobs"
+    "Contact Business Name": "Jacobs",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:25",
@@ -1117,7 +1179,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:24",
@@ -1152,7 +1216,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.674317534077,
+    "longitude": -84.410630561973
   },
   {
     "Opened": "9/17/2015 9:24",
@@ -1187,7 +1253,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "Jacobs"
+    "Contact Business Name": "Jacobs",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:23",
@@ -1222,7 +1290,9 @@
     "Closed": "9/17/2015 9:24",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.667709483667,
+    "longitude": -84.390142073394
   },
   {
     "Opened": "9/17/2015 9:22",
@@ -1257,7 +1327,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.750508946965,
+    "longitude": -84.367296370571
   },
   {
     "Opened": "9/17/2015 9:22",
@@ -1292,7 +1364,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.720616210131,
+    "longitude": -84.450001319556
   },
   {
     "Opened": "9/17/2015 9:22",
@@ -1327,7 +1401,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.742162677765,
+    "longitude": -84.350385144792
   },
   {
     "Opened": "9/17/2015 9:22",
@@ -1362,7 +1438,9 @@
     "Closed": "9/17/2015 9:25",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:21",
@@ -1397,7 +1475,9 @@
     "Closed": "9/17/2015 9:23",
     "Priority": "3-Medium",
     "Closed By Login": "NABROWN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:20",
@@ -1432,7 +1512,9 @@
     "Closed": "9/17/2015 9:29",
     "Priority": "3-Medium",
     "Closed By Login": "VEHERRIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:20",
@@ -1467,7 +1549,9 @@
     "Closed": "9/17/2015 9:22",
     "Priority": "3-Medium",
     "Closed By Login": "JEDODSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.67509198541,
+    "longitude": -84.506562531888
   },
   {
     "Opened": "9/17/2015 9:19",
@@ -1502,7 +1586,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:18",
@@ -1537,7 +1623,9 @@
     "Closed": "9/17/2015 9:23",
     "Priority": "3-Medium",
     "Closed By Login": "LLYOUNG",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.691264566613,
+    "longitude": -84.540374496666
   },
   {
     "Opened": "9/17/2015 9:18",
@@ -1572,7 +1660,9 @@
     "Closed": "9/17/2015 9:21",
     "Priority": "3-Medium",
     "Closed By Login": "SGREENE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.762885681127,
+    "longitude": -84.480706463352
   },
   {
     "Opened": "9/17/2015 9:18",
@@ -1607,7 +1697,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.761908357808,
+    "longitude": -84.329421790363
   },
   {
     "Opened": "9/17/2015 9:17",
@@ -1642,7 +1734,9 @@
     "Closed": "9/17/2015 9:24",
     "Priority": "3-Medium",
     "Closed By Login": "DRREID",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.759136958182,
+    "longitude": -84.48842771561
   },
   {
     "Opened": "9/17/2015 9:17",
@@ -1677,7 +1771,9 @@
     "Closed": "9/17/2015 9:19",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:17",
@@ -1712,7 +1808,9 @@
     "Closed": "9/17/2015 9:19",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:17",
@@ -1747,7 +1845,9 @@
     "Closed": "9/17/2015 9:21",
     "Priority": "3-Medium",
     "Closed By Login": "JAPARTRIDGE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.864003423178,
+    "longitude": -84.360689650556
   },
   {
     "Opened": "9/17/2015 9:17",
@@ -1782,7 +1882,9 @@
     "Closed": "9/17/2015 9:18",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:16",
@@ -1817,7 +1919,9 @@
     "Closed": "9/17/2015 9:37",
     "Priority": "3-Medium",
     "Closed By Login": "DRREID",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:16",
@@ -1852,7 +1956,9 @@
     "Closed": "9/17/2015 9:21",
     "Priority": "3-Medium",
     "Closed By Login": "MAASCOTT",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:15",
@@ -1887,7 +1993,9 @@
     "Closed": "9/17/2015 9:17",
     "Priority": "3-Medium",
     "Closed By Login": "VEHERRIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:15",
@@ -1922,7 +2030,9 @@
     "Closed": "9/17/2015 9:31",
     "Priority": "3-Medium",
     "Closed By Login": "LSHOWELL",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:14",
@@ -1957,7 +2067,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:14",
@@ -1992,7 +2104,9 @@
     "Closed": "9/17/2015 9:14",
     "Priority": "3-Medium",
     "Closed By Login": "SGREENE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:14",
@@ -2027,7 +2141,9 @@
     "Closed": "9/17/2015 9:16",
     "Priority": "3-Medium",
     "Closed By Login": "NABROWN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.678461593359,
+    "longitude": -84.535645219846
   },
   {
     "Opened": "9/17/2015 9:14",
@@ -2062,7 +2178,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:14",
@@ -2097,7 +2215,9 @@
     "Closed": "9/17/2015 9:14",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.801663634657,
+    "longitude": -84.375605257432
   },
   {
     "Opened": "9/17/2015 9:13",
@@ -2132,7 +2252,9 @@
     "Closed": "9/17/2015 9:14",
     "Priority": "3-Medium",
     "Closed By Login": "MAASCOTT",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:12",
@@ -2167,7 +2289,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.816770701976,
+    "longitude": -84.387161854839
   },
   {
     "Opened": "9/17/2015 9:12",
@@ -2202,7 +2326,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.700101703152,
+    "longitude": -84.414310366347
   },
   {
     "Opened": "9/17/2015 9:12",
@@ -2237,7 +2363,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.830932061704,
+    "longitude": -84.431557791231
   },
   {
     "Opened": "9/17/2015 9:11",
@@ -2272,7 +2400,9 @@
     "Closed": "9/17/2015 9:23",
     "Priority": "3-Medium",
     "Closed By Login": "MAMANGHAM",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.821575125659,
+    "longitude": -84.402783446009
   },
   {
     "Opened": "9/17/2015 9:11",
@@ -2307,7 +2437,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McLain & Merritt PC"
+    "Contact Business Name": "McLain & Merritt PC",
+    "latitude": 33.755316068306,
+    "longitude": -84.31895452413
   },
   {
     "Opened": "9/17/2015 9:10",
@@ -2342,7 +2474,9 @@
     "Closed": "9/17/2015 9:14",
     "Priority": "3-Medium",
     "Closed By Login": "LLYOUNG",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.760913329428,
+    "longitude": -84.460933343491
   },
   {
     "Opened": "9/17/2015 9:10",
@@ -2377,7 +2511,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:10",
@@ -2412,7 +2548,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:09",
@@ -2447,7 +2585,9 @@
     "Closed": "9/17/2015 9:21",
     "Priority": "3-Medium",
     "Closed By Login": "VRUSSELL",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.748590592706,
+    "longitude": -84.424269224236
   },
   {
     "Opened": "9/17/2015 9:09",
@@ -2482,7 +2622,9 @@
     "Closed": "9/17/2015 9:13",
     "Priority": "3-Medium",
     "Closed By Login": "TPTELFORD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.714870607077,
+    "longitude": -84.563195324277
   },
   {
     "Opened": "9/17/2015 9:09",
@@ -2517,7 +2659,9 @@
     "Closed": "9/17/2015 9:12",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.696239971376,
+    "longitude": -84.480849799551
   },
   {
     "Opened": "9/17/2015 9:09",
@@ -2552,7 +2696,9 @@
     "Closed": "9/17/2015 9:10",
     "Priority": "3-Medium",
     "Closed By Login": "SKMUHAMMAD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:08",
@@ -2587,7 +2733,9 @@
     "Closed": "9/17/2015 9:10",
     "Priority": "3-Medium",
     "Closed By Login": "NABROWN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.716466147929,
+    "longitude": -84.416023896018
   },
   {
     "Opened": "9/17/2015 9:08",
@@ -2622,7 +2770,9 @@
     "Closed": "9/17/2015 9:11",
     "Priority": "3-Medium",
     "Closed By Login": "JEDODSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.830932061704,
+    "longitude": -84.431557791231
   },
   {
     "Opened": "9/17/2015 9:07",
@@ -2657,7 +2807,9 @@
     "Closed": "9/17/2015 9:08",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.671458197607,
+    "longitude": -84.396443720812
   },
   {
     "Opened": "9/17/2015 9:06",
@@ -2692,7 +2844,9 @@
     "Closed": "9/17/2015 9:09",
     "Priority": "3-Medium",
     "Closed By Login": "LGREEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.718996686968,
+    "longitude": -84.469146811773
   },
   {
     "Opened": "9/17/2015 9:06",
@@ -2727,7 +2881,9 @@
     "Closed": "9/17/2015 9:12",
     "Priority": "3-Medium",
     "Closed By Login": "VEHERRIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.7683175946,
+    "longitude": -84.384010489689
   },
   {
     "Opened": "9/17/2015 9:05",
@@ -2762,7 +2918,9 @@
     "Closed": "9/17/2015 9:08",
     "Priority": "3-Medium",
     "Closed By Login": "LLYOUNG",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.765259061783,
+    "longitude": -84.363514021997
   },
   {
     "Opened": "9/17/2015 9:05",
@@ -2797,7 +2955,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:04",
@@ -2832,7 +2992,9 @@
     "Closed": "9/17/2015 9:14",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.757503430707,
+    "longitude": -84.409210710827
   },
   {
     "Opened": "9/17/2015 9:04",
@@ -2867,7 +3029,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -2902,7 +3066,9 @@
     "Closed": "9/17/2015 9:06",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.671458197607,
+    "longitude": -84.396443720812
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -2937,7 +3103,9 @@
     "Closed": "9/17/2015 9:04",
     "Priority": "3-Medium",
     "Closed By Login": "NABROWN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -2972,7 +3140,9 @@
     "Closed": "9/17/2015 9:03",
     "Priority": "3-Medium",
     "Closed By Login": "BANDERSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.768325744443,
+    "longitude": -84.349099522091
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -3007,7 +3177,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.696442481726,
+    "longitude": -84.362362940988
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -3042,7 +3214,9 @@
     "Closed": "9/17/2015 9:03",
     "Priority": "3-Medium",
     "Closed By Login": "LLYOUNG",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -3077,7 +3251,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.605735393242,
+    "longitude": -84.54737493257
   },
   {
     "Opened": "9/17/2015 9:03",
@@ -3112,7 +3288,9 @@
     "Closed": "9/17/2015 9:06",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 9:01",
@@ -3147,7 +3325,9 @@
     "Closed": "9/17/2015 9:01",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.708851277325,
+    "longitude": -84.354405315596
   },
   {
     "Opened": "9/17/2015 9:00",
@@ -3182,7 +3362,9 @@
     "Closed": "9/17/2015 9:24",
     "Priority": "3-Medium",
     "Closed By Login": "DWOODARD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.776404043462,
+    "longitude": -84.465789181723
   },
   {
     "Opened": "9/17/2015 8:59",
@@ -3217,7 +3399,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:59",
@@ -3252,7 +3436,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:59",
@@ -3287,7 +3473,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.760956567609,
+    "longitude": -84.429266168621
   },
   {
     "Opened": "9/17/2015 8:58",
@@ -3322,7 +3510,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:58",
@@ -3357,7 +3547,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:58",
@@ -3392,7 +3584,9 @@
     "Closed": "9/17/2015 8:59",
     "Priority": "3-Medium",
     "Closed By Login": "JJHARKNESS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:58",
@@ -3427,7 +3621,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:57",
@@ -3462,7 +3658,9 @@
     "Closed": "9/17/2015 9:01",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:57",
@@ -3497,7 +3695,9 @@
     "Closed": "9/17/2015 8:58",
     "Priority": "3-Medium",
     "Closed By Login": "SKMUHAMMAD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:57",
@@ -3532,7 +3732,9 @@
     "Closed": "9/17/2015 8:58",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:56",
@@ -3567,7 +3769,9 @@
     "Closed": "9/17/2015 9:02",
     "Priority": "3-Medium",
     "Closed By Login": "LBREWER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:56",
@@ -3602,7 +3806,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.605735393242,
+    "longitude": -84.54737493257
   },
   {
     "Opened": "9/17/2015 8:56",
@@ -3637,7 +3843,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.831459300523,
+    "longitude": -84.411064457952
   },
   {
     "Opened": "9/17/2015 8:55",
@@ -3672,7 +3880,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.796220851633,
+    "longitude": -84.397937518924
   },
   {
     "Opened": "9/17/2015 8:55",
@@ -3707,7 +3917,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.751258382206,
+    "longitude": -84.321931176157
   },
   {
     "Opened": "9/17/2015 8:55",
@@ -3742,7 +3954,9 @@
     "Closed": "9/17/2015 8:57",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:54",
@@ -3777,7 +3991,9 @@
     "Closed": "9/17/2015 8:58",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.708851277325,
+    "longitude": -84.354405315596
   },
   {
     "Opened": "9/17/2015 8:54",
@@ -3812,7 +4028,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:54",
@@ -3847,7 +4065,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.756616743905,
+    "longitude": -84.423726430594
   },
   {
     "Opened": "9/17/2015 8:54",
@@ -3882,7 +4102,9 @@
     "Closed": "9/17/2015 8:58",
     "Priority": "3-Medium",
     "Closed By Login": "ARBENEFIELD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.705695705473,
+    "longitude": -84.422748279068
   },
   {
     "Opened": "9/17/2015 8:53",
@@ -3917,7 +4139,9 @@
     "Closed": "9/17/2015 8:54",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:53",
@@ -3952,7 +4176,9 @@
     "Closed": "9/17/2015 8:55",
     "Priority": "3-Medium",
     "Closed By Login": "JJHARKNESS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.705023876583,
+    "longitude": -84.544445067187
   },
   {
     "Opened": "9/17/2015 8:52",
@@ -3987,7 +4213,9 @@
     "Closed": "9/17/2015 8:56",
     "Priority": "3-Medium",
     "Closed By Login": "TLLIPSCOMB",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:52",
@@ -4022,7 +4250,9 @@
     "Closed": "9/17/2015 8:54",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:51",
@@ -4057,7 +4287,9 @@
     "Closed": "9/17/2015 9:08",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:51",
@@ -4092,7 +4324,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.811308832261,
+    "longitude": -84.467177626195
   },
   {
     "Opened": "9/17/2015 8:51",
@@ -4127,7 +4361,9 @@
     "Closed": "9/17/2015 8:56",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:51",
@@ -4162,7 +4398,9 @@
     "Closed": "9/17/2015 8:56",
     "Priority": "3-Medium",
     "Closed By Login": "MAASCOTT",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:51",
@@ -4197,7 +4435,9 @@
     "Closed": "9/17/2015 8:53",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.729193807734,
+    "longitude": -84.443349648286
   },
   {
     "Opened": "9/17/2015 8:50",
@@ -4232,7 +4472,9 @@
     "Closed": "9/17/2015 8:54",
     "Priority": "3-Medium",
     "Closed By Login": "DWOODARD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.696479899102,
+    "longitude": -84.514459481659
   },
   {
     "Opened": "9/17/2015 8:49",
@@ -4267,7 +4509,9 @@
     "Closed": "9/17/2015 8:52",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:48",
@@ -4302,7 +4546,9 @@
     "Closed": "9/17/2015 8:50",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.766510887859,
+    "longitude": -84.367698542859
   },
   {
     "Opened": "9/17/2015 8:48",
@@ -4337,7 +4583,9 @@
     "Closed": "9/17/2015 8:52",
     "Priority": "3-Medium",
     "Closed By Login": "VRUSSELL",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.822566464123,
+    "longitude": -84.371230113895
   },
   {
     "Opened": "9/17/2015 8:48",
@@ -4372,7 +4620,9 @@
     "Closed": "9/17/2015 8:55",
     "Priority": "3-Medium",
     "Closed By Login": "DSTERLING",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.748933160052,
+    "longitude": -84.34416020526
   },
   {
     "Opened": "9/17/2015 8:47",
@@ -4407,7 +4657,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.698057872032,
+    "longitude": -84.381354112186
   },
   {
     "Opened": "9/17/2015 8:47",
@@ -4442,7 +4694,9 @@
     "Closed": "9/17/2015 8:52",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:47",
@@ -4477,7 +4731,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:47",
@@ -4512,7 +4768,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.758806963491,
+    "longitude": -84.361151187615
   },
   {
     "Opened": "9/17/2015 8:46",
@@ -4547,7 +4805,9 @@
     "Closed": "9/17/2015 8:48",
     "Priority": "3-Medium",
     "Closed By Login": "ARBENEFIELD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.821575125659,
+    "longitude": -84.402783446009
   },
   {
     "Opened": "9/17/2015 8:46",
@@ -4582,7 +4842,9 @@
     "Closed": "9/17/2015 8:46",
     "Priority": "3-Medium",
     "Closed By Login": "JJHARKNESS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.681317876541,
+    "longitude": -84.406300388695
   },
   {
     "Opened": "9/17/2015 8:45",
@@ -4617,7 +4879,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.75533383859,
+    "longitude": -84.430844320376
   },
   {
     "Opened": "9/17/2015 8:45",
@@ -4652,7 +4916,9 @@
     "Closed": "9/17/2015 8:50",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.811308832261,
+    "longitude": -84.467177626195
   },
   {
     "Opened": "9/17/2015 8:45",
@@ -4687,7 +4953,9 @@
     "Closed": "9/17/2015 8:46",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:43",
@@ -4722,7 +4990,9 @@
     "Closed": "9/17/2015 8:48",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:42",
@@ -4757,7 +5027,9 @@
     "Closed": "9/17/2015 8:50",
     "Priority": "3-Medium",
     "Closed By Login": "RACARSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:42",
@@ -4792,7 +5064,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:42",
@@ -4827,7 +5101,9 @@
     "Closed": "9/17/2015 8:44",
     "Priority": "3-Medium",
     "Closed By Login": "VEHERRIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:42",
@@ -4862,7 +5138,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.755532691043,
+    "longitude": -84.372966699526
   },
   {
     "Opened": "9/17/2015 8:41",
@@ -4897,7 +5175,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.748811718647,
+    "longitude": -84.355731899145
   },
   {
     "Opened": "9/17/2015 8:41",
@@ -4932,7 +5212,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:41",
@@ -4967,7 +5249,9 @@
     "Closed": "9/17/2015 8:45",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.617399560568,
+    "longitude": -84.589173376598
   },
   {
     "Opened": "9/17/2015 8:40",
@@ -5002,7 +5286,9 @@
     "Closed": "9/17/2015 8:43",
     "Priority": "3-Medium",
     "Closed By Login": "LBREWER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.728051837827,
+    "longitude": -84.476029066495
   },
   {
     "Opened": "9/17/2015 8:39",
@@ -5037,7 +5323,9 @@
     "Closed": "9/17/2015 8:43",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": "MCCLAIN & MERRITT"
+    "Contact Business Name": "MCCLAIN & MERRITT",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:39",
@@ -5072,7 +5360,9 @@
     "Closed": "9/17/2015 8:52",
     "Priority": "3-Medium",
     "Closed By Login": "LCROSSLAND",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.755557817238,
+    "longitude": -84.391362357308
   },
   {
     "Opened": "9/17/2015 8:38",
@@ -5107,7 +5397,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.728659138878,
+    "longitude": -84.403112466767
   },
   {
     "Opened": "9/17/2015 8:37",
@@ -5142,7 +5434,9 @@
     "Closed": "9/17/2015 8:39",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.681317876541,
+    "longitude": -84.406300388695
   },
   {
     "Opened": "9/17/2015 8:37",
@@ -5177,7 +5471,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.72984626734,
+    "longitude": -84.421797961036
   },
   {
     "Opened": "9/17/2015 8:37",
@@ -5212,7 +5508,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.719827609182,
+    "longitude": -84.4365334858
   },
   {
     "Opened": "9/17/2015 8:36",
@@ -5247,7 +5545,9 @@
     "Closed": "9/17/2015 8:39",
     "Priority": "3-Medium",
     "Closed By Login": "VEHERRIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.718260606539,
+    "longitude": -84.486443778389
   },
   {
     "Opened": "9/17/2015 8:36",
@@ -5282,13 +5582,15 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:36",
     "Source": "Phone",
     "SR #": "129177948",
-    "Attached Knowledge Base Article Topic": "Report a Missing or Damaged Water Meter Lid \u2013 Small Meter",
+    "Attached Knowledge Base Article Topic": "Report a Missing or Damaged Water Meter Lid – Small Meter",
     "Department": "DWM",
     "Area": "Customer Service",
     "Sub Area": "Inspections",
@@ -5317,7 +5619,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:35",
@@ -5352,7 +5656,9 @@
     "Closed": "9/17/2015 8:40",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:35",
@@ -5387,7 +5693,9 @@
     "Closed": "9/17/2015 8:40",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:34",
@@ -5422,7 +5730,9 @@
     "Closed": "9/17/2015 8:38",
     "Priority": "3-Medium",
     "Closed By Login": "TLLIPSCOMB",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.840489540475,
+    "longitude": -84.369856443367
   },
   {
     "Opened": "9/17/2015 8:34",
@@ -5457,7 +5767,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.681317876541,
+    "longitude": -84.406300388695
   },
   {
     "Opened": "9/17/2015 8:34",
@@ -5492,7 +5804,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.67823666578,
+    "longitude": -84.382313109234
   },
   {
     "Opened": "9/17/2015 8:34",
@@ -5527,7 +5841,9 @@
     "Closed": "9/17/2015 8:35",
     "Priority": "3-Medium",
     "Closed By Login": "LBREWER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:34",
@@ -5562,7 +5878,9 @@
     "Closed": "9/17/2015 8:41",
     "Priority": "3-Medium",
     "Closed By Login": "RACARSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:33",
@@ -5597,7 +5915,9 @@
     "Closed": "9/17/2015 8:41",
     "Priority": "3-Medium",
     "Closed By Login": "BANDERSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.698584711692,
+    "longitude": -84.5195690033
   },
   {
     "Opened": "9/17/2015 8:33",
@@ -5632,7 +5952,9 @@
     "Closed": "9/17/2015 8:35",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.74276319892,
+    "longitude": -84.290047435663
   },
   {
     "Opened": "9/17/2015 8:32",
@@ -5667,7 +5989,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.790045249065,
+    "longitude": -84.379014316745
   },
   {
     "Opened": "9/17/2015 8:32",
@@ -5702,13 +6026,15 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.716875477874,
+    "longitude": -84.429270907661
   },
   {
     "Opened": "9/17/2015 8:32",
     "Source": "Internal",
     "SR #": "129202729",
-    "Attached Knowledge Base Article Topic": "Hartsfield-Jackson Atlanta International Airport\u2019s Guest Relations Office",
+    "Attached Knowledge Base Article Topic": "Hartsfield-Jackson Atlanta International Airport’s Guest Relations Office",
     "Department": "DOA",
     "Area": "Customer Service",
     "Sub Area": "Customer Service",
@@ -5737,7 +6063,9 @@
     "Closed": "9/17/2015 8:35",
     "Priority": "3-Medium",
     "Closed By Login": "SKMUHAMMAD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:32",
@@ -5772,7 +6100,9 @@
     "Closed": "9/17/2015 8:33",
     "Priority": "3-Medium",
     "Closed By Login": "JJHARKNESS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:32",
@@ -5807,7 +6137,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:31",
@@ -5842,7 +6174,9 @@
     "Closed": "9/17/2015 8:33",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:30",
@@ -5877,7 +6211,9 @@
     "Closed": "9/17/2015 8:32",
     "Priority": "3-Medium",
     "Closed By Login": "BECOLEMAN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.778105753745,
+    "longitude": -84.502391494935
   },
   {
     "Opened": "9/17/2015 8:30",
@@ -5912,7 +6248,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "Philadephia Baptist Church"
+    "Contact Business Name": "Philadephia Baptist Church",
+    "latitude": 33.74142437503,
+    "longitude": -84.384121965449
   },
   {
     "Opened": "9/17/2015 8:29",
@@ -5947,7 +6285,9 @@
     "Closed": "9/17/2015 8:30",
     "Priority": "3-Medium",
     "Closed By Login": "TLLIPSCOMB",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:29",
@@ -5982,7 +6322,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.757893774021,
+    "longitude": -84.431013275575
   },
   {
     "Opened": "9/17/2015 8:29",
@@ -6017,7 +6359,9 @@
     "Closed": "9/17/2015 8:29",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.750199533829,
+    "longitude": -84.298208968527
   },
   {
     "Opened": "9/17/2015 8:29",
@@ -6052,7 +6396,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:28",
@@ -6087,7 +6433,9 @@
     "Closed": "9/17/2015 8:30",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:27",
@@ -6122,7 +6470,9 @@
     "Closed": "9/17/2015 8:29",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:27",
@@ -6157,7 +6507,9 @@
     "Closed": "9/17/2015 8:31",
     "Priority": "3-Medium",
     "Closed By Login": "BANDERSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.728837021579,
+    "longitude": -84.383320703754
   },
   {
     "Opened": "9/17/2015 8:27",
@@ -6192,7 +6544,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.856422894693,
+    "longitude": -84.3549239881
   },
   {
     "Opened": "9/17/2015 8:26",
@@ -6227,13 +6581,15 @@
     "Closed": "9/17/2015 8:27",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:26",
     "Source": "Phone",
     "SR #": "129177912",
-    "Attached Knowledge Base Article Topic": "Report a Missing or Damaged Water Meter Lid \u2013 Small Meter",
+    "Attached Knowledge Base Article Topic": "Report a Missing or Damaged Water Meter Lid – Small Meter",
     "Department": "DWM",
     "Area": "Customer Service",
     "Sub Area": "Inspections",
@@ -6262,7 +6618,9 @@
     "Closed": "9/17/2015 8:32",
     "Priority": "3-Medium",
     "Closed By Login": "VRUSSELL",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.881846819083,
+    "longitude": -84.383591030225
   },
   {
     "Opened": "9/17/2015 8:26",
@@ -6297,7 +6655,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.870139800744,
+    "longitude": -84.356817620046
   },
   {
     "Opened": "9/17/2015 8:25",
@@ -6332,7 +6692,9 @@
     "Closed": "9/17/2015 8:25",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:24",
@@ -6367,7 +6729,9 @@
     "Closed": "9/17/2015 8:25",
     "Priority": "3-Medium",
     "Closed By Login": "VRUSSELL",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.734737946763,
+    "longitude": -84.344646137396
   },
   {
     "Opened": "9/17/2015 8:23",
@@ -6402,7 +6766,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.820068325581,
+    "longitude": -84.435092768096
   },
   {
     "Opened": "9/17/2015 8:23",
@@ -6437,7 +6803,9 @@
     "Closed": "9/17/2015 8:29",
     "Priority": "3-Medium",
     "Closed By Login": "TLLIPSCOMB",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.609580056002,
+    "longitude": -84.551618567294
   },
   {
     "Opened": "9/17/2015 8:23",
@@ -6472,7 +6840,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:22",
@@ -6507,7 +6877,9 @@
     "Closed": "9/17/2015 8:28",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:22",
@@ -6542,7 +6914,9 @@
     "Closed": "9/17/2015 8:22",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:21",
@@ -6577,7 +6951,9 @@
     "Closed": "9/17/2015 8:23",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:21",
@@ -6612,7 +6988,9 @@
     "Closed": "9/17/2015 8:26",
     "Priority": "3-Medium",
     "Closed By Login": "LBREWER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:20",
@@ -6647,7 +7025,9 @@
     "Closed": "9/17/2015 8:22",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:19",
@@ -6682,7 +7062,9 @@
     "Closed": "9/17/2015 8:21",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:19",
@@ -6717,7 +7099,9 @@
     "Closed": "9/17/2015 8:25",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:19",
@@ -6752,7 +7136,9 @@
     "Closed": "9/17/2015 8:33",
     "Priority": "3-Medium",
     "Closed By Login": "RACARSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:17",
@@ -6787,7 +7173,9 @@
     "Closed": "9/17/2015 8:17",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:15",
@@ -6822,7 +7210,9 @@
     "Closed": "9/17/2015 8:16",
     "Priority": "3-Medium",
     "Closed By Login": "TLLIPSCOMB",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:15",
@@ -6857,7 +7247,9 @@
     "Closed": "9/17/2015 8:28",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.755532691043,
+    "longitude": -84.372966699526
   },
   {
     "Opened": "9/17/2015 8:15",
@@ -6892,7 +7284,9 @@
     "Closed": "9/17/2015 8:17",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:14",
@@ -6927,7 +7321,9 @@
     "Closed": "9/17/2015 8:21",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.785434545476,
+    "longitude": -84.360083935273
   },
   {
     "Opened": "9/17/2015 8:14",
@@ -6962,7 +7358,9 @@
     "Closed": "9/17/2015 8:32",
     "Priority": "3-Medium",
     "Closed By Login": "DWOODARD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.852566622816,
+    "longitude": -84.427771988282
   },
   {
     "Opened": "9/17/2015 8:13",
@@ -6997,7 +7395,9 @@
     "Closed": "9/17/2015 8:13",
     "Priority": "3-Medium",
     "Closed By Login": "JPIERCE",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:11",
@@ -7032,7 +7432,9 @@
     "Closed": "9/17/2015 8:13",
     "Priority": "3-Medium",
     "Closed By Login": "LBREWER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:11",
@@ -7067,7 +7469,9 @@
     "Closed": "9/17/2015 8:11",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:11",
@@ -7102,7 +7506,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.691859288435,
+    "longitude": -84.556095081915
   },
   {
     "Opened": "9/17/2015 8:10",
@@ -7137,7 +7543,9 @@
     "Closed": "9/17/2015 8:11",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:10",
@@ -7172,7 +7580,9 @@
     "Closed": "9/17/2015 8:21",
     "Priority": "3-Medium",
     "Closed By Login": "DSTERLING",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.66447544421,
+    "longitude": -84.516984211395
   },
   {
     "Opened": "9/17/2015 8:06",
@@ -7207,7 +7617,9 @@
     "Closed": "9/17/2015 8:15",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.714746680495,
+    "longitude": -84.44698240803
   },
   {
     "Opened": "9/17/2015 8:06",
@@ -7242,7 +7654,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.767789855664,
+    "longitude": -84.342666035322
   },
   {
     "Opened": "9/17/2015 8:06",
@@ -7277,7 +7691,9 @@
     "Closed": "9/17/2015 8:13",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:04",
@@ -7312,7 +7728,9 @@
     "Closed": "9/17/2015 8:04",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:04",
@@ -7347,7 +7765,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.688675552949,
+    "longitude": -84.385067758676
   },
   {
     "Opened": "9/17/2015 8:04",
@@ -7382,7 +7802,9 @@
     "Closed": "9/17/2015 8:08",
     "Priority": "3-Medium",
     "Closed By Login": "BCAIN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 8:03",
@@ -7417,7 +7839,9 @@
     "Closed": "9/17/2015 8:05",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:57",
@@ -7452,7 +7876,9 @@
     "Closed": "9/17/2015 8:04",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:56",
@@ -7487,7 +7913,9 @@
     "Closed": "9/17/2015 8:04",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.814551043162,
+    "longitude": -84.469296815612
   },
   {
     "Opened": "9/17/2015 7:56",
@@ -7522,7 +7950,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.741620044707,
+    "longitude": -84.376446100275
   },
   {
     "Opened": "9/17/2015 7:56",
@@ -7557,7 +7987,9 @@
     "Closed": "9/17/2015 7:56",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:55",
@@ -7592,7 +8024,9 @@
     "Closed": "9/17/2015 7:56",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:51",
@@ -7627,7 +8061,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:50",
@@ -7662,7 +8098,9 @@
     "Closed": "9/17/2015 7:52",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:50",
@@ -7697,7 +8135,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.728460384061,
+    "longitude": -84.349420294394
   },
   {
     "Opened": "9/17/2015 7:50",
@@ -7732,7 +8172,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:49",
@@ -7767,7 +8209,9 @@
     "Closed": "9/17/2015 7:57",
     "Priority": "3-Medium",
     "Closed By Login": "DWOODARD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.871427614484,
+    "longitude": -84.349305295381
   },
   {
     "Opened": "9/17/2015 7:49",
@@ -7802,7 +8246,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.729915231524,
+    "longitude": -84.388026936792
   },
   {
     "Opened": "9/17/2015 7:48",
@@ -7837,7 +8283,9 @@
     "Closed": "9/17/2015 7:55",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.741620044707,
+    "longitude": -84.376446100275
   },
   {
     "Opened": "9/17/2015 7:46",
@@ -7872,7 +8320,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.735194536626,
+    "longitude": -84.385338199586
   },
   {
     "Opened": "9/17/2015 7:45",
@@ -7907,7 +8357,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.735678513542,
+    "longitude": -84.398405404039
   },
   {
     "Opened": "9/17/2015 7:43",
@@ -7942,7 +8394,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.735696733575,
+    "longitude": -84.395921132834
   },
   {
     "Opened": "9/17/2015 7:42",
@@ -7977,7 +8431,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.703564889141,
+    "longitude": -84.542181555455
   },
   {
     "Opened": "9/17/2015 7:42",
@@ -8012,7 +8468,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:41",
@@ -8047,7 +8505,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.742718133719,
+    "longitude": -84.445988771401
   },
   {
     "Opened": "9/17/2015 7:39",
@@ -8082,7 +8542,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.742981338809,
+    "longitude": -84.400947066257
   },
   {
     "Opened": "9/17/2015 7:37",
@@ -8117,7 +8579,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.74018038284,
+    "longitude": -84.316329157598
   },
   {
     "Opened": "9/17/2015 7:34",
@@ -8152,7 +8616,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.673656332386,
+    "longitude": -84.457735068455
   },
   {
     "Opened": "9/17/2015 7:34",
@@ -8187,7 +8653,9 @@
     "Closed": "9/17/2015 7:37",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.737100026396,
+    "longitude": -84.489251144456
   },
   {
     "Opened": "9/17/2015 7:33",
@@ -8222,7 +8690,9 @@
     "Closed": "9/17/2015 7:44",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:33",
@@ -8257,7 +8727,9 @@
     "Closed": "9/17/2015 7:37",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:32",
@@ -8292,7 +8764,9 @@
     "Closed": "9/17/2015 7:33",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:31",
@@ -8327,7 +8801,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.735008511839,
+    "longitude": -84.442935164638
   },
   {
     "Opened": "9/17/2015 7:29",
@@ -8362,7 +8838,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.722433741794,
+    "longitude": -84.437949619615
   },
   {
     "Opened": "9/17/2015 7:27",
@@ -8397,7 +8875,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.721143016568,
+    "longitude": -84.428989805665
   },
   {
     "Opened": "9/17/2015 7:25",
@@ -8432,7 +8912,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.728607425508,
+    "longitude": -84.425223034625
   },
   {
     "Opened": "9/17/2015 7:25",
@@ -8467,7 +8949,9 @@
     "Closed": "9/17/2015 7:28",
     "Priority": "3-Medium",
     "Closed By Login": "DWOODARD",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:23",
@@ -8502,7 +8986,9 @@
     "Closed": "9/17/2015 7:27",
     "Priority": "3-Medium",
     "Closed By Login": "MAWILLIAMS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:22",
@@ -8537,7 +9023,9 @@
     "Closed": "9/17/2015 8:31",
     "Priority": "3-Medium",
     "Closed By Login": "BALLEN",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/17/2015 7:20",
@@ -8572,7 +9060,9 @@
     "Closed": "9/17/2015 7:33",
     "Priority": "3-Medium",
     "Closed By Login": "BLPETERS",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.740894845827,
+    "longitude": -84.344292320417
   },
   {
     "Opened": "9/17/2015 7:18",
@@ -8607,7 +9097,9 @@
     "Closed": "9/17/2015 7:20",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.841219358666,
+    "longitude": -84.358156581602
   },
   {
     "Opened": "9/17/2015 7:17",
@@ -8642,7 +9134,9 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": "McMichael & Gray PC LHT"
+    "Contact Business Name": "McMichael & Gray PC LHT",
+    "latitude": 33.732417769055,
+    "longitude": -84.382276560847
   },
   {
     "Opened": "9/17/2015 7:14",
@@ -8677,7 +9171,9 @@
     "Closed": "9/17/2015 7:23",
     "Priority": "3-Medium",
     "Closed By Login": "CHUDSON",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": 33.805353125081,
+    "longitude": -84.449430780211
   },
   {
     "Opened": "9/17/2015 7:06",
@@ -8712,7 +9208,9 @@
     "Closed": "9/17/2015 7:42",
     "Priority": "3-Medium",
     "Closed By Login": "KGOTIER",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   },
   {
     "Opened": "9/16/2015 23:42",
@@ -8747,6 +9245,8 @@
     "Closed": "",
     "Priority": "3-Medium",
     "Closed By Login": "",
-    "Contact Business Name": ""
+    "Contact Business Name": "",
+    "latitude": null,
+    "longitude": null
   }
 ]

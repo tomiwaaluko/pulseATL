@@ -54,6 +54,50 @@ incidents.
 | address input | `Street #`, `Street Name`, `Street Type`, `City/County`, `Postal Code` | concatenate non-empty parts |
 | `npu` | — | point-in-polygon join after geocoding |
 
+### ATL311 geocoding (PULSE-19)
+
+The 2015 export has no numeric coordinates, so `normalize.ts` rejects every
+ATL311 row today (`lat`/`lon` come from `raw.lat ?? raw.latitude` and
+`raw.lon ?? raw.longitude`, and the fixture has neither). `backend/scripts/geocode-atl311.ts`
+fills that gap by geocoding the fixture's structured address fields against the
+**US Census Bureau batch geocoder**
+(`https://geocoding.geo.census.gov/geocoder/locations/addressbatch`,
+`benchmark=Public_AR_Current`) — a free, keyless public service, so no secret is
+required.
+
+- Address input per row: `Street #` + `Street Name` + `Street Type` (joined
+  with spaces) as the street; `City/County` as the city, unless it names a
+  county (e.g. `FULTON COUNTY`) rather than a real city, in which case the
+  city is left blank and the ZIP carries that weight; state is always `GA`;
+  `Postal Code` as the ZIP. A row with no street, or with neither a usable
+  city nor a ZIP, is never sent — see `buildAtl311Address` in
+  `backend/src/ingest/geocode.ts`.
+- The geocoder is called once per batch of up to 500 addresses (`addressFile`,
+  multipart/form-data, no header row: `unique_id,street,city,state,zip`),
+  well under its documented 10,000-row batch limit.
+- A result only counts as geocoded when the Census match indicator is
+  `Match` **and** the returned longitude/latitude fall inside the Atlanta
+  metro bounding box (`lon` −84.6..−84.2, `lat` 33.6..33.9). Anything else —
+  no match, a tie, or a match outside that box — is written back as
+  `latitude: null, longitude: null` and counted as a failure. Coordinates are
+  never fabricated or approximated.
+- The script writes `latitude`/`longitude` (not `lat`/`lon`) onto each fixture
+  row, matching the `raw.latitude`/`raw.longitude` fallback `normalize.ts`
+  already reads for the `atl311` source. It is idempotent: a row that already
+  has numeric `latitude`/`longitude` is left untouched on a re-run, and only
+  rows still `null` (or missing the fields) are retried.
+- Run it locally with `npm run geocode:atl311 --workspace=backend`, or via the
+  `Geocode ATL311 fixture` GitHub Actions workflow
+  (`.github/workflows/geocode.yml`), which commits the updated fixture back to
+  `ticket/PULSE-19-geocode-workflow`.
+- **Coverage (first real run)**: 128/250 rows geocoded (51.2%) — 26 Census
+  no-matches, 32 matches outside the Atlanta bbox, 0 unparseable responses, and
+  64 rows with no usable address at all. 118/250 rows (47.2%) normalize into a
+  real NPU; the shortfall from 128 isn't a bug — `City/County` on 38 of the 250
+  rows names another Fulton County city (College Park, Sandy Springs, Fairburn,
+  Union City, East Point) that sits entirely outside every Atlanta NPU polygon,
+  so those rows correctly reject at the NPU join even when Census geocodes them.
+
 ## NPU boundary layer
 
 - Publisher/catalog: [City of Atlanta Department of City Planning Open Data
