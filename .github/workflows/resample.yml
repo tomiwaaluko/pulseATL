@@ -40,11 +40,17 @@ jobs:
 
       - run: npm ci --include=dev
 
+      # pipefail matters: without it `cmd | tee` reports tee's exit code, so a
+      # crashing script leaves the step green and the failure is invisible.
       - name: Resample from the full export
-        run: npm run resample:atl311 --workspace=backend | tee "$RUNNER_TEMP/resample.txt"
+        run: |
+          set -o pipefail
+          npm run resample:atl311 --workspace=backend | tee "$RUNNER_TEMP/resample.txt"
 
       - name: Geocode the new sample
-        run: npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode.txt"
+        run: |
+          set -o pipefail
+          npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode.txt"
 
       - name: Run the test suite against the new fixture
         run: npm test

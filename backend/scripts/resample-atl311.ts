@@ -104,7 +104,9 @@ async function main(): Promise<void> {
     .filter((item): item is { row: RawRecord; opened: number } => item.opened !== null);
   if (dated.length === 0) throw new Error("no rows carry a parseable Opened timestamp");
 
-  const newest = Math.max(...dated.map((item) => item.opened));
+  // Reduce, not Math.max(...spread): spreading ~1M elements into a call blows
+  // the argument stack (RangeError: Maximum call stack size exceeded).
+  const newest = dated.reduce((max, item) => (item.opened > max ? item.opened : max), -Infinity);
   const cutoff = newest - WINDOW_DAYS * DAY_MS;
   console.log(
     `window: ${new Date(cutoff).toISOString().slice(0, 10)} .. ${new Date(newest).toISOString().slice(0, 10)}`,
@@ -124,10 +126,10 @@ async function main(): Promise<void> {
     .sort((a, b) => (parseStamp(a["Opened"]) ?? 0) - (parseStamp(b["Opened"]) ?? 0));
 
   console.log(`\n=== sample of ${sample.length} rows ===`);
-  const opens = sample.map((row) => parseStamp(row["Opened"]) ?? 0);
+  const opens = sample.map((row) => parseStamp(row["Opened"]) ?? 0).sort((a, b) => a - b);
   console.log(
-    `opened span: ${new Date(Math.min(...opens)).toISOString().slice(0, 10)}`
-    + ` .. ${new Date(Math.max(...opens)).toISOString().slice(0, 10)}`,
+    `opened span: ${new Date(opens[0]).toISOString().slice(0, 10)}`
+    + ` .. ${new Date(opens[opens.length - 1]).toISOString().slice(0, 10)}`,
   );
   console.log(`with a Closed value: ${sample.filter((row) => parseStamp(row["Closed"]) !== null).length}`);
   describeDurations(sample);
