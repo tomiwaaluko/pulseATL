@@ -79,9 +79,24 @@ export interface CensusMatchResult {
 }
 
 /**
- * Parses the Census batch geocoder's response CSV. Columns (unquoted commas
- * split fields the same as any other CSV row): unique_id, input address,
- * match indicator, match type, matched address, longitude, latitude, tiger
+ * Splits the Census coordinate column. The batch geocoder returns the pair as a
+ * SINGLE quoted field — `"-84.360083935273,33.785434545476"` — in
+ * longitude,latitude order, not as two adjacent columns. Reading it as two
+ * columns silently yields NaN for the longitude and the TIGER line ID for the
+ * latitude, which is how this originally failed on all 160 matched rows.
+ */
+function parseCoordinatePair(field: string | undefined): { lon: number; lat: number } | null {
+  const parts = (field ?? "").split(",");
+  if (parts.length !== 2) return null;
+  const lon = Number(parts[0].trim());
+  const lat = Number(parts[1].trim());
+  return Number.isFinite(lon) && Number.isFinite(lat) ? { lon, lat } : null;
+}
+
+/**
+ * Parses the Census batch geocoder's response CSV. Columns, as observed in a
+ * real response (every field quoted, no header row): unique_id, input address,
+ * match indicator, match type, matched address, "longitude,latitude", tiger
  * line id, side. Unmatched rows only carry the first three columns.
  *
  * A result counts as matched only when the Census match indicator says
@@ -96,8 +111,6 @@ export function parseCensusBatchResponse(text: string): CensusMatchResult[] {
     .map((fields): CensusMatchResult => {
       const id = (fields[0] ?? "").trim();
       const matchIndicator = (fields[2] ?? "").trim().toLowerCase();
-      const lon = Number(fields[5]);
-      const lat = Number(fields[6]);
 
       const unmatched = (outcome: CensusMatchOutcome): CensusMatchResult =>
         ({ id, matched: false, lon: null, lat: null, outcome });
@@ -106,8 +119,10 @@ export function parseCensusBatchResponse(text: string): CensusMatchResult[] {
       // with HTTP 200, say) lands here: too few columns to even hold a verdict.
       if (fields.length < 3) return unmatched("unparseable");
       if (matchIndicator !== "match") return unmatched("no_match");
-      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return unmatched("unparseable");
-      if (!isWithinAtlantaBounds(lon, lat)) return unmatched("out_of_bounds");
-      return { id, matched: true, lon, lat, outcome: "match" };
+
+      const point = parseCoordinatePair(fields[5]);
+      if (point === null) return unmatched("unparseable");
+      if (!isWithinAtlantaBounds(point.lon, point.lat)) return unmatched("out_of_bounds");
+      return { id, matched: true, lon: point.lon, lat: point.lat, outcome: "match" };
     });
 }

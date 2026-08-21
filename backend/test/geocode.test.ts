@@ -83,32 +83,64 @@ describe("isWithinAtlantaBounds", () => {
 });
 
 describe("parseCensusBatchResponse", () => {
-  it("parses a matched row and keeps longitude before latitude", () => {
-    const response = [
-      '129213674,"6745 CEDAR HURST TRL, ATLANTA, GA, 30349",Match,Non_Exact,',
-      '"6745 CEDAR HURST TRL, ATLANTA, GA, 30349",-84.548,33.634,123456789,L',
-    ].join("");
-    const [result] = parseCensusBatchResponse(response);
-    expect(result).toEqual({ id: "129213674", matched: true, lon: -84.548, lat: 33.634, outcome: "match" });
+  // Captured verbatim from a real Census batch response (workflow run 32516369127).
+  // Two details only a real response shows: every field is quoted, and the
+  // coordinates arrive as ONE field holding "longitude,latitude" — not as two
+  // adjacent columns. An earlier hand-written fixture guessed two columns, so the
+  // tests passed against a parser that could not read an actual response.
+  const REAL_MATCH_ROW =
+    '"129186129","844 BROOKRIDGE DR, ATLANTA, GA, 30306","Match","Non_Exact",'
+    + '"844 BROOKRIDGE DR NE, ATLANTA, GA, 30306","-84.360083935273,33.785434545476","17356888","L"';
+
+  it("parses a real matched row, splitting the combined coordinate field", () => {
+    const [result] = parseCensusBatchResponse(REAL_MATCH_ROW);
+
+    expect(result).toEqual({
+      id: "129186129",
+      matched: true,
+      lon: -84.360083935273,
+      lat: 33.785434545476,
+      outcome: "match",
+    });
   });
 
   it("does not swap longitude and latitude", () => {
-    const response = '1,"100 MAIN ST, ATLANTA, GA, 30303",Match,Exact,"100 MAIN ST, ATLANTA, GA, 30303",-84.39,33.75,1,L';
-    const [result] = parseCensusBatchResponse(response);
-    expect(result.lon).toBe(-84.39);
-    expect(result.lat).toBe(33.75);
+    const [result] = parseCensusBatchResponse(REAL_MATCH_ROW);
+
+    // Atlanta is near 33.75 N, 84.39 W: latitude is positive, longitude negative.
+    expect(result.lon).toBeLessThan(0);
+    expect(result.lat).toBeGreaterThan(0);
+  });
+
+  it("never reads the TIGER line id as a latitude", () => {
+    const [result] = parseCensusBatchResponse(REAL_MATCH_ROW);
+
+    expect(result.lat).not.toBe(17356888);
   });
 
   it("marks a No_Match row as unmatched", () => {
-    const response = '2,"9999 NOWHERE RD, ATLANTA, GA, 30303",No_Match';
+    const response = '"2","9999 NOWHERE RD, ATLANTA, GA, 30303","No_Match"';
     const [result] = parseCensusBatchResponse(response);
+
     expect(result).toEqual({ id: "2", matched: false, lon: null, lat: null, outcome: "no_match" });
   });
 
   it("rejects a match whose coordinates fall outside Atlanta (never fabricates)", () => {
-    const response = '3,"1 INFINITE LOOP, CUPERTINO, CA, 95014",Match,Exact,"1 INFINITE LOOP, CUPERTINO, CA, 95014",-122.03,37.33,1,L';
+    const response =
+      '"3","1 INFINITE LOOP, CUPERTINO, CA, 95014","Match","Exact",'
+      + '"1 INFINITE LOOP, CUPERTINO, CA, 95014","-122.03,37.33","1","L"';
     const [result] = parseCensusBatchResponse(response);
+
     expect(result).toEqual({ id: "3", matched: false, lon: null, lat: null, outcome: "out_of_bounds" });
+  });
+
+  it("flags a coordinate field that is not a pair as unparseable", () => {
+    const response =
+      '"4","100 MAIN ST, ATLANTA, GA, 30303","Match","Exact","100 MAIN ST","-84.39","1","L"';
+    const [result] = parseCensusBatchResponse(response);
+
+    expect(result.outcome).toBe("unparseable");
+    expect(result.matched).toBe(false);
   });
 
   it("flags a non-CSV response (HTML error page under HTTP 200) as unparseable", () => {
@@ -119,17 +151,13 @@ describe("parseCensusBatchResponse", () => {
   });
 
   it("ignores blank rows from a trailing newline", () => {
-    const response = '1,"100 MAIN ST, ATLANTA, GA, 30303",Match,Exact,"100 MAIN ST",-84.39,33.75,1,L\n';
-
-    expect(parseCensusBatchResponse(response)).toHaveLength(1);
+    expect(parseCensusBatchResponse(`${REAL_MATCH_ROW}\n`)).toHaveLength(1);
   });
 
   it("parses multiple rows from one response", () => {
-    const response = [
-      '1,"100 MAIN ST, ATLANTA, GA, 30303",Match,Exact,"100 MAIN ST, ATLANTA, GA, 30303",-84.39,33.75,1,L',
-      '2,"9999 NOWHERE RD, ATLANTA, GA, 30303",No_Match',
-    ].join("\n");
+    const response = [REAL_MATCH_ROW, '"2","9999 NOWHERE RD, ATLANTA, GA, 30303","No_Match"'].join("\n");
     const results = parseCensusBatchResponse(response);
+
     expect(results).toHaveLength(2);
     expect(results[0].matched).toBe(true);
     expect(results[1].matched).toBe(false);
