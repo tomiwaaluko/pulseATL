@@ -253,30 +253,78 @@ export function cityMedians(allStats: NpuStats[]): CityMedians {
   };
 }
 
-const CORTEX_SQL = `SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2',
+/**
+ * Models to try, in order, when SNOWFLAKE_CORTEX_MODEL is not set.
+ *
+ * A single hard-coded name is what broke this: `mistral-large2` moved to legacy
+ * state and Cortex began answering every call with
+ * `400 'The model mistral-large2 has been in legacy state, please use other
+ * models.'`, so all 25 NPUs silently took the fallback. Which models a Cortex
+ * account can reach also varies by region and entitlement, so a list that is
+ * tried in order survives both a retirement and a region gap without a redeploy.
+ */
+export const CORTEX_MODEL_CANDIDATES = [
+  "claude-sonnet-4-5",
+  "llama3.1-70b",
+  "mistral-large",
+  "snowflake-arctic",
+] as const;
+
+/** First candidate that answered this process; skips the dead ones on later NPUs. */
+let resolvedCortexModel: string | null = null;
+
+/** Test seam: forget the cached model so each case starts from the full list. */
+export function resetCortexModel(): void {
+  resolvedCortexModel = null;
+}
+
+function cortexModelsToTry(): string[] {
+  const configured = process.env.SNOWFLAKE_CORTEX_MODEL?.trim();
+  // An explicit choice is honoured exactly — no silent substitution.
+  if (configured !== undefined && configured !== "") return [configured];
+  return resolvedCortexModel === null ? [...CORTEX_MODEL_CANDIDATES] : [resolvedCortexModel];
+}
+
+/**
+ * Model names are interpolated into SQL (CORTEX.COMPLETE takes a literal, not a
+ * bind), so anything that is not a plain model identifier is refused rather than
+ * concatenated.
+ */
+function cortexSql(model: string): string {
+  if (!/^[A-Za-z0-9._-]+$/.test(model)) {
+    throw new Error(`Unsafe Cortex model name: ${model}`);
+  }
+  return `SELECT SNOWFLAKE.CORTEX.COMPLETE('${model}',
   'You are a civic data analyst. Given these NPU stats vs city medians, identify the 2 most significant anomalies or trends in <=80 words, neutral tone: ' || ?) AS findings`;
+}
 
 /**
  * Run the anomaly narrative *inside* Snowflake via CORTEX.COMPLETE.
  *
  * Never throws: a Cortex outage (or a trial account without the function)
  * must not take the whole ingest down, so a clearly-marked fallback string is
- * returned instead and Gemini absorbs the narrative downstream. The fallback
- * deliberately omits the driver error text, which can echo connection details.
+ * returned instead and Gemini absorbs the narrative downstream. Errors are
+ * logged rather than returned — driver text can echo connection details, so it
+ * goes through describeError and never reaches an API response.
  */
 export async function cortexFindings(stats: NpuStats, medians: CityMedians): Promise<string> {
   const payload = JSON.stringify({ npu: stats.npu, stats, city_medians: medians });
-  try {
-    const rows = await sfQuery<{ FINDINGS?: unknown; findings?: unknown }>(CORTEX_SQL, [payload]);
-    const raw = rows[0]?.FINDINGS ?? rows[0]?.findings;
-    const findings = typeof raw === "string" ? raw.trim() : "";
-    if (findings) return findings;
-  } catch (error) {
-    // Log the cause: a swallowed error made a Cortex outage indistinguishable
-    // from Cortex returning an empty string, and the fallback text alone gave
-    // no way to tell a missing entitlement from an unavailable model. The
-    // message is redacted because driver errors can echo connection details.
-    console.error(`[cortex] NPU ${stats.npu} findings unavailable — ${describeError(error)}`);
+  for (const model of cortexModelsToTry()) {
+    try {
+      const rows = await sfQuery<{ FINDINGS?: unknown; findings?: unknown }>(cortexSql(model), [payload]);
+      const raw = rows[0]?.FINDINGS ?? rows[0]?.findings;
+      const findings = typeof raw === "string" ? raw.trim() : "";
+      if (findings) {
+        if (resolvedCortexModel !== model) {
+          console.log(`[cortex] using model ${model}`);
+          resolvedCortexModel = model;
+        }
+        return findings;
+      }
+      console.error(`[cortex] NPU ${stats.npu}: model ${model} returned no text`);
+    } catch (error) {
+      console.error(`[cortex] NPU ${stats.npu}: model ${model} unavailable — ${describeError(error)}`);
+    }
   }
   return `${CORTEX_FALLBACK_PREFIX} Snowflake Cortex did not return findings for NPU ${stats.npu}; the report narrative falls back to the Gemini summary of the same statistics.`;
 }
