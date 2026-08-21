@@ -56,7 +56,8 @@ jobs:
           # findings are real analysis or the [cortex-unavailable] marker, and
           # whether the narrative is real or the [report pending] placeholder.
           curl -s --max-time 60 "$BASE/api/npus" > "$RUNNER_TEMP/npus.json"
-          npu=$(python3 -c "import json;d=json.load(open('$RUNNER_TEMP/npus.json'));print(d[0]['npu'] if d else '')" 2>/dev/null || echo '')
+          # /api/npus returns {npus: [{npu, pulse_score, trend}, ...]}, not a bare array.
+          npu=$(python3 -c "import json;d=json.load(open('$RUNNER_TEMP/npus.json')).get('npus') or [];print(d[0]['npu'] if d else '')" 2>/dev/null || echo '')
           if [ -z "$npu" ]; then
             echo "::error::/api/npus returned nothing usable"
             exit 1

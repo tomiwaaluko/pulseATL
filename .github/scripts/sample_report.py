@@ -20,9 +20,11 @@ def main() -> int:
     with open(path, encoding="utf-8") as handle:
         detail = json.load(handle)
 
+    # Field names follow the frozen API contract (design spec §5): the detail
+    # payload serialises gemini_report as report_md and stats_json as stats.
     cortex = detail.get("cortex_findings") or ""
-    gemini = detail.get("gemini_report") or ""
-    stats = detail.get("stats_json") or {}
+    gemini = detail.get("report_md") or ""
+    stats = detail.get("stats") or {}
 
     print(f"NPU {npu}: pulse_score={detail.get('pulse_score')} trend={detail.get('trend')}")
     print(f"cortex : {classify(cortex, CORTEX_PLACEHOLDER)} ({len(cortex)} chars)")
