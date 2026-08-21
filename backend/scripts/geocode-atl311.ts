@@ -18,6 +18,7 @@ import {
   buildAddressBatchCsv,
   buildAtl311Address,
   parseCensusBatchResponse,
+  type CensusMatchOutcome,
 } from "../src/ingest/geocode.js";
 
 const FIXTURE_PATH = join(__dirname, "..", "test", "fixtures", "atl311_service_requests.sample.json");
@@ -54,10 +55,22 @@ async function geocodeBatch(entries: Array<{ id: string; address: ReturnType<typ
     body: form,
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
+  const body = await response.text();
+
+  // The Census geocoder answers some malformed requests with an HTML error page
+  // under HTTP 200, which parses as CSV into rows that all read as No_Match. Log
+  // enough of the raw response to tell that apart from genuine non-matches —
+  // these are public street addresses, so there is nothing here to redact.
+  console.log(
+    `[census] sent ${addressable.length} addresses -> HTTP ${response.status} `
+    + `${response.headers.get("content-type") ?? "(no content-type)"}, ${body.length} bytes`,
+  );
+  console.log(`[census] first 200 chars of response: ${JSON.stringify(body.slice(0, 200))}`);
+
   if (!response.ok) {
     throw new Error(`Census batch geocoder returned HTTP ${response.status}`);
   }
-  return parseCensusBatchResponse(await response.text());
+  return parseCensusBatchResponse(body);
 }
 
 async function main(): Promise<void> {
@@ -73,9 +86,16 @@ async function main(): Promise<void> {
   }));
 
   const results = new Map<string, { lon: number; lat: number }>();
+  const outcomes: Record<CensusMatchOutcome, number> = {
+    match: 0,
+    no_match: 0,
+    out_of_bounds: 0,
+    unparseable: 0,
+  };
   for (const batch of chunk(entries, BATCH_SIZE)) {
     const matches = await geocodeBatch(batch);
     for (const match of matches) {
+      outcomes[match.outcome] += 1;
       if (match.matched && match.lon !== null && match.lat !== null) {
         results.set(match.id, { lon: match.lon, lat: match.lat });
       }
@@ -101,7 +121,14 @@ async function main(): Promise<void> {
   const totalGeocoded = alreadyGeocoded + geocoded;
   const totalFailed = rows.length - totalGeocoded;
 
-  writeFileSync(FIXTURE_PATH, `${JSON.stringify(rows, null, 2)}\n`);
+  // A run that geocoded nothing has nothing to record: writing null coordinates
+  // over 250 rows produces a large diff that looks like progress and is not, and
+  // the nulls buy no idempotency either (needsGeocoding already retries them).
+  if (geocoded > 0) {
+    writeFileSync(FIXTURE_PATH, `${JSON.stringify(rows, null, 2)}\n`);
+  } else {
+    console.log("no new coordinates resolved — fixture left untouched");
+  }
 
   const coords = rows
     .map((row) => ({ lat: row.latitude, lon: row.longitude }))
@@ -116,8 +143,15 @@ async function main(): Promise<void> {
     }
     : null;
 
+  const unaddressable = entries.filter((entry) => entry.address === null).length;
+
   console.log("=== ATL311 geocoding summary ===");
   console.log(`total rows:      ${rows.length}`);
+  console.log(`no address:      ${unaddressable} (never sent — missing street, and no city or ZIP)`);
+  console.log(
+    `census verdicts: ${outcomes.match} match, ${outcomes.no_match} no_match, `
+    + `${outcomes.out_of_bounds} out_of_bounds, ${outcomes.unparseable} unparseable`,
+  );
   console.log(`geocoded:        ${totalGeocoded}`);
   console.log(`failed:          ${totalFailed}`);
   console.log(`% success:       ${((totalGeocoded / rows.length) * 100).toFixed(1)}%`);

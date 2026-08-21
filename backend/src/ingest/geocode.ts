@@ -61,11 +61,21 @@ export function isWithinAtlantaBounds(lon: number, lat: number): boolean {
     && lat >= ATLANTA_BOUNDS.minLat && lat <= ATLANTA_BOUNDS.maxLat;
 }
 
+/**
+ * Why a row produced no coordinates. Kept distinct because the three cases call
+ * for different fixes: `no_match` is an address the Census cannot resolve,
+ * `out_of_bounds` means our Atlanta bbox rejected a coordinate the Census was
+ * happy with, and `unparseable` means the response was not the CSV we expect —
+ * usually an error page returned with HTTP 200.
+ */
+export type CensusMatchOutcome = "match" | "no_match" | "out_of_bounds" | "unparseable";
+
 export interface CensusMatchResult {
   id: string;
   matched: boolean;
   lon: number | null;
   lat: number | null;
+  outcome: CensusMatchOutcome;
 }
 
 /**
@@ -79,13 +89,25 @@ export interface CensusMatchResult {
  * a match outside metro Atlanta is treated as a bad geocode, never fabricated.
  */
 export function parseCensusBatchResponse(text: string): CensusMatchResult[] {
-  return parseCsvRows(text).map((fields): CensusMatchResult => {
-    const id = (fields[0] ?? "").trim();
-    const matchIndicator = (fields[2] ?? "").trim().toLowerCase();
-    const lon = Number(fields[5]);
-    const lat = Number(fields[6]);
-    const isGoodMatch = matchIndicator === "match"
-      && Number.isFinite(lon) && Number.isFinite(lat) && isWithinAtlantaBounds(lon, lat);
-    return isGoodMatch ? { id, matched: true, lon, lat } : { id, matched: false, lon: null, lat: null };
-  });
+  const isBlankRow = (fields: string[]): boolean => fields.every((field) => field.trim() === "");
+
+  return parseCsvRows(text)
+    .filter((fields) => !isBlankRow(fields))
+    .map((fields): CensusMatchResult => {
+      const id = (fields[0] ?? "").trim();
+      const matchIndicator = (fields[2] ?? "").trim().toLowerCase();
+      const lon = Number(fields[5]);
+      const lat = Number(fields[6]);
+
+      const unmatched = (outcome: CensusMatchOutcome): CensusMatchResult =>
+        ({ id, matched: false, lon: null, lat: null, outcome });
+
+      // A response that is not the CSV we expect (an HTML error page returned
+      // with HTTP 200, say) lands here: too few columns to even hold a verdict.
+      if (fields.length < 3) return unmatched("unparseable");
+      if (matchIndicator !== "match") return unmatched("no_match");
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return unmatched("unparseable");
+      if (!isWithinAtlantaBounds(lon, lat)) return unmatched("out_of_bounds");
+      return { id, matched: true, lon, lat, outcome: "match" };
+    });
 }

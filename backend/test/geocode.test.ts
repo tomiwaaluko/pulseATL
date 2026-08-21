@@ -89,7 +89,7 @@ describe("parseCensusBatchResponse", () => {
       '"6745 CEDAR HURST TRL, ATLANTA, GA, 30349",-84.548,33.634,123456789,L',
     ].join("");
     const [result] = parseCensusBatchResponse(response);
-    expect(result).toEqual({ id: "129213674", matched: true, lon: -84.548, lat: 33.634 });
+    expect(result).toEqual({ id: "129213674", matched: true, lon: -84.548, lat: 33.634, outcome: "match" });
   });
 
   it("does not swap longitude and latitude", () => {
@@ -102,13 +102,26 @@ describe("parseCensusBatchResponse", () => {
   it("marks a No_Match row as unmatched", () => {
     const response = '2,"9999 NOWHERE RD, ATLANTA, GA, 30303",No_Match';
     const [result] = parseCensusBatchResponse(response);
-    expect(result).toEqual({ id: "2", matched: false, lon: null, lat: null });
+    expect(result).toEqual({ id: "2", matched: false, lon: null, lat: null, outcome: "no_match" });
   });
 
   it("rejects a match whose coordinates fall outside Atlanta (never fabricates)", () => {
     const response = '3,"1 INFINITE LOOP, CUPERTINO, CA, 95014",Match,Exact,"1 INFINITE LOOP, CUPERTINO, CA, 95014",-122.03,37.33,1,L';
     const [result] = parseCensusBatchResponse(response);
-    expect(result).toEqual({ id: "3", matched: false, lon: null, lat: null });
+    expect(result).toEqual({ id: "3", matched: false, lon: null, lat: null, outcome: "out_of_bounds" });
+  });
+
+  it("flags a non-CSV response (HTML error page under HTTP 200) as unparseable", () => {
+    const results = parseCensusBatchResponse("<html><body>Service Unavailable</body></html>");
+
+    expect(results.every((result) => result.outcome === "unparseable")).toBe(true);
+    expect(results.every((result) => result.matched === false)).toBe(true);
+  });
+
+  it("ignores blank rows from a trailing newline", () => {
+    const response = '1,"100 MAIN ST, ATLANTA, GA, 30303",Match,Exact,"100 MAIN ST",-84.39,33.75,1,L\n';
+
+    expect(parseCensusBatchResponse(response)).toHaveLength(1);
   });
 
   it("parses multiple rows from one response", () => {
