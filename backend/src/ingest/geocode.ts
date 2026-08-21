@@ -79,10 +79,16 @@ export interface CensusMatchResult {
 }
 
 /**
- * Parses the Census batch geocoder's response CSV. Columns (unquoted commas
- * split fields the same as any other CSV row): unique_id, input address,
- * match indicator, match type, matched address, longitude, latitude, tiger
- * line id, side. Unmatched rows only carry the first three columns.
+ * Parses the Census batch geocoder's response CSV: unique_id, input address,
+ * match indicator, match type, matched address, then coordinates, TIGER line
+ * ID, and side. Unmatched rows only carry the first three columns.
+ *
+ * The coordinates column is documented as one "longitude,latitude" value, but
+ * whether Census quotes it varies by response — quoted, it survives
+ * RFC 4180 parsing as a single field; unquoted, the same parser splits it on
+ * its internal comma into two plain fields. Rather than guess, this locates
+ * coordinates by position from the *end* of the row (the trailing TIGER line
+ * ID and side are always exactly two fields) and handles both shapes.
  *
  * A result counts as matched only when the Census match indicator says
  * "Match" AND the coordinates parse to finite numbers inside Atlanta's bbox —
@@ -96,8 +102,6 @@ export function parseCensusBatchResponse(text: string): CensusMatchResult[] {
     .map((fields): CensusMatchResult => {
       const id = (fields[0] ?? "").trim();
       const matchIndicator = (fields[2] ?? "").trim().toLowerCase();
-      const lon = Number(fields[5]);
-      const lat = Number(fields[6]);
 
       const unmatched = (outcome: CensusMatchOutcome): CensusMatchResult =>
         ({ id, matched: false, lon: null, lat: null, outcome });
@@ -106,6 +110,17 @@ export function parseCensusBatchResponse(text: string): CensusMatchResult[] {
       // with HTTP 200, say) lands here: too few columns to even hold a verdict.
       if (fields.length < 3) return unmatched("unparseable");
       if (matchIndicator !== "match") return unmatched("no_match");
+
+      // The coordinates column is documented as one "longitude,latitude" value,
+      // but whether Census quotes it varies by response — quoted, it survives
+      // RFC 4180 parsing as a single field; unquoted, the same parser splits it
+      // on its internal comma into two plain fields. Locate it by position from
+      // the row's *end* (TIGER line ID and side are always the trailing two
+      // fields) so both shapes work without guessing which one Census sent.
+      const coordFields = fields.slice(5, fields.length - 2);
+      const [lonText, latText] = coordFields.length === 1 ? coordFields[0].split(",") : coordFields;
+      const lon = Number(lonText);
+      const lat = Number(latText);
       if (!Number.isFinite(lon) || !Number.isFinite(lat)) return unmatched("unparseable");
       if (!isWithinAtlantaBounds(lon, lat)) return unmatched("out_of_bounds");
       return { id, matched: true, lon, lat, outcome: "match" };

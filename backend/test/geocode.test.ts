@@ -99,6 +99,12 @@ describe("parseCensusBatchResponse", () => {
     expect(result.lat).toBe(33.75);
   });
 
+  it("parses a matched row whose coordinates are one quoted \"lon,lat\" field", () => {
+    const response = '1,"100 MAIN ST, ATLANTA, GA, 30303",Match,Exact,"100 MAIN ST, ATLANTA, GA, 30303","-84.39,33.75",1,L';
+    const [result] = parseCensusBatchResponse(response);
+    expect(result).toEqual({ id: "1", matched: true, lon: -84.39, lat: 33.75, outcome: "match" });
+  });
+
   it("marks a No_Match row as unmatched", () => {
     const response = '2,"9999 NOWHERE RD, ATLANTA, GA, 30303",No_Match';
     const [result] = parseCensusBatchResponse(response);
