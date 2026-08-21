@@ -3,6 +3,7 @@ import { generateReport } from "../geminiClient.js";
 import { computePulse } from "../pulse.js";
 import { closeSnowflake } from "../snowflakeClient.js";
 import type { CityMedians, Incident, NpuStats, Report, SourceId } from "../types.js";
+import { computeLocalNpuStats } from "./localStats.js";
 import { cityMedians, computeNpuStats, cortexFindings, ensureSchema, loadIncidents } from "./load.js";
 import { normalizeRecord, type NpuIndex } from "./normalize.js";
 import {
@@ -17,9 +18,25 @@ import {
 /** Written to `reports.gemini_report` when no Gemini key is configured (never a fake report). */
 export const REPORT_PLACEHOLDER = "[report pending]";
 
+/**
+ * Written to `reports.cortex_findings` on the `--no-snowflake` path — Cortex is
+ * a Snowflake feature, so it is never reached at all on this path, not merely
+ * unavailable for one NPU.
+ */
+export const NO_SNOWFLAKE_CORTEX_MESSAGE = "[cortex-unavailable] Snowflake Cortex was not reachable for this run.";
+
 export interface IngestOptions {
   /** Read committed fixtures instead of the live portals, and date-shift them. */
   seed: boolean;
+  /**
+   * Demo-insurance fallback: never touch Snowflake. Incidents are aggregated
+   * into `NpuStats` locally (see `localStats.ts`) instead of via
+   * `loadIncidents`/`computeNpuStats`, and `cortex_findings` gets the literal
+   * `NO_SNOWFLAKE_CORTEX_MESSAGE`. Always reads and date-shifts the committed
+   * fixtures, the same as `--seed`, regardless of whether `--seed` was also
+   * passed — a live-portal fetch is one more thing that can fail on demo night.
+   */
+  noSnowflake?: boolean;
 }
 
 export interface SourceOutcome {
@@ -60,7 +77,7 @@ export interface IngestDeps {
 }
 
 export function parseArgs(argv: readonly string[]): IngestOptions {
-  return { seed: argv.includes("--seed") };
+  return { seed: argv.includes("--seed"), noSnowflake: argv.includes("--no-snowflake") };
 }
 
 /**
@@ -133,14 +150,28 @@ async function reportNarrative(deps: IngestDeps, stats: NpuStats, findings: stri
  * second run rewrites the same 25 rows instead of appending.
  */
 export async function runIngest(deps: IngestDeps, options: IngestOptions): Promise<IngestSummary> {
-  deps.log(`[ingest] starting (${options.seed ? "seed fixtures" : "live sources"})`);
-  const { incidents, outcomes } = await collectIncidents(deps, options);
+  const noSnowflake = options.noSnowflake ?? false;
+  deps.log(
+    `[ingest] starting (${options.seed ? "seed fixtures" : "live sources"}`
+    + `${noSnowflake ? ", no-snowflake" : ""})`,
+  );
+  // --no-snowflake always reads and date-shifts the committed fixtures, same as
+  // --seed: a live-portal fetch is one more thing that can fail on demo night.
+  const collectOptions: IngestOptions = noSnowflake ? { ...options, seed: true } : options;
+  const { incidents, outcomes } = await collectIncidents(deps, collectOptions);
 
-  await deps.ensureSchema();
-  const incidentsLoaded = await deps.loadIncidents(incidents);
-  deps.log(`[ingest] ${incidentsLoaded} incident rows merged into Snowflake`);
-
-  const stats = fullNpuStats(await deps.computeNpuStats(), deps.npus);
+  let stats: NpuStats[];
+  let incidentsLoaded: number;
+  if (noSnowflake) {
+    stats = fullNpuStats(computeLocalNpuStats(incidents, deps.now()), deps.npus);
+    incidentsLoaded = incidents.length;
+    deps.log(`[ingest] ${incidentsLoaded} incident rows aggregated locally (Snowflake skipped)`);
+  } else {
+    await deps.ensureSchema();
+    incidentsLoaded = await deps.loadIncidents(incidents);
+    deps.log(`[ingest] ${incidentsLoaded} incident rows merged into Snowflake`);
+    stats = fullNpuStats(await deps.computeNpuStats(), deps.npus);
+  }
   const medians = deps.cityMedians(stats);
   await deps.initSchema();
 
@@ -152,7 +183,7 @@ export async function runIngest(deps: IngestDeps, options: IngestOptions): Promi
   const reports: Report[] = [];
   for (const npuStats of stats) {
     const { score, trend } = computePulse(npuStats, stats);
-    const findings = await deps.cortexFindings(npuStats, medians);
+    const findings = noSnowflake ? NO_SNOWFLAKE_CORTEX_MESSAGE : await deps.cortexFindings(npuStats, medians);
     const gemini = await reportNarrative(deps, npuStats, findings);
     if (gemini !== REPORT_PLACEHOLDER) geminiReports += 1;
     reports.push({
@@ -171,7 +202,7 @@ export async function runIngest(deps: IngestDeps, options: IngestOptions): Promi
   deps.log(`[ingest] wrote ${stats.length} report rows (${geminiReports} Gemini narratives)`);
 
   return {
-    seed: options.seed,
+    seed: collectOptions.seed,
     sources: outcomes,
     incidents: incidents.length,
     incidentsLoaded,
@@ -213,7 +244,10 @@ if (require.main === module) {
   main().then(
     () => process.exit(0),
     (error: unknown) => {
-      console.error(`[ingest] failed: ${(error as Error).message}`);
+      const failure = error as Error & { code?: string; cause?: unknown };
+      const cause = failure.cause instanceof Error ? ` (cause: ${failure.cause.message})` : "";
+      const code = failure.code === undefined ? "" : ` [${failure.code}]`;
+      console.error(`[ingest] failed${code}: ${failure.message}${cause}`);
       process.exit(1);
     },
   );

@@ -1,7 +1,7 @@
 import type { NpuDetail, Trend } from "../types";
 import { scoreColor } from "./PulseMap";
 
-const TREND_STYLES: Record<Trend, { label: string; className: string }> = {
+export const TREND_STYLES: Record<Trend, { label: string; className: string }> = {
   improving: {
     label: "▲ Improving",
     className: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/40",

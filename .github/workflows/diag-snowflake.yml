@@ -1,0 +1,97 @@
+name: Diag Snowflake
+
+# Diagnostic-only: tries several account-identifier formats and reports which one
+# actually connects. Snowflake's CURRENT_ACCOUNT() returns the account LOCATOR,
+# which is not always usable in the ORG-ACCOUNT form the SDK expects, so we probe
+# the locator/region form too.
+# Trigger by pushing to ops/diag-snowflake. Delete once connectivity is settled.
+
+on:
+  push:
+    branches:
+      - ops/diag-snowflake
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --include=dev
+
+      - name: Probe account identifier formats
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          # Script must live in the repo so Node resolves the hoisted node_modules.
+          cat > diag.mjs <<'SCRIPT'
+          import sf from 'snowflake-sdk';
+          import https from 'node:https';
+          sf.configure({ logLevel: 'OFF' });
+
+          // Known from Snowsight: CURRENT_ACCOUNT()=WC84723, CURRENT_REGION()=AWS_US_EAST_2,
+          // CURRENT_ORGANIZATION_NAME()=YXMHGJM. The locator form is the safest fallback.
+          const candidates = [
+            ['locator.region.cloud', 'wc84723.us-east-2.aws'],
+            ['locator.region',       'wc84723.us-east-2'],
+            ['secret as configured',  process.env.SNOWFLAKE_ACCOUNT],
+            ['org-locator lowercase', 'yxmhgjm-wc84723'],
+          ];
+
+          // A 403/404 on the login endpoint means the host is wrong; a 200-ish or
+          // structured JSON error means the host is right and it is a credential issue.
+          const probeHost = (host) => new Promise((resolve) => {
+            const req = https.request(
+              { host, path: '/session/v1/login-request', method: 'POST', timeout: 8000,
+                headers: { 'Content-Type': 'application/json' } },
+              (res) => {
+                let body = '';
+                res.on('data', (c) => (body += c));
+                res.on('end', () => resolve(`HTTP ${res.statusCode} ${body.slice(0, 160)}`));
+              },
+            );
+            req.on('timeout', () => { req.destroy(); resolve('TIMEOUT'); });
+            req.on('error', (e) => resolve(`NETERR ${e.code || e.message}`));
+            req.end('{}');
+          });
+
+          const tryConnect = (account) => new Promise((resolve) => {
+            const conn = sf.createConnection({
+              account,
+              username: process.env.SNOWFLAKE_USER,
+              password: process.env.SNOWFLAKE_PASSWORD,
+            });
+            conn.connect((err) => {
+              if (err) return resolve({ ok: false, msg: `${err.code} ${err.message}` });
+              conn.execute({
+                sqlText: 'SELECT CURRENT_ACCOUNT_NAME() AS AN, CURRENT_ORGANIZATION_NAME() AS ON_, CURRENT_REGION() AS R',
+                complete: (qErr, _s, rows) =>
+                  resolve(qErr
+                    ? { ok: true, msg: `connected, query failed: ${qErr.message}` }
+                    : { ok: true, msg: `connected -> ${JSON.stringify(rows?.[0])}` }),
+              });
+            });
+          });
+
+          for (const [label, account] of candidates) {
+            const host = account.includes('.')
+              ? `${account.split('.').slice(0, 1)}.${account.split('.').slice(1).join('.')}.snowflakecomputing.com`
+              : `${account}.snowflakecomputing.com`;
+            console.log(`\n=== ${label}: account="${account}"`);
+            console.log(`    host probe: ${await probeHost(host.toLowerCase())}`);
+            const r = await tryConnect(account);
+            console.log(`    sdk connect: ${r.ok ? 'SUCCESS' : 'FAIL'} — ${r.msg}`);
+            if (r.ok) console.log(`\n*** WORKING ACCOUNT IDENTIFIER: ${account} ***`);
+          }
+          process.exit(0);
+          SCRIPT
+          node diag.mjs
+        working-directory: backend
+        continue-on-error: true

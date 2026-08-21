@@ -32,7 +32,42 @@ function toSnowflakeTimestamp(value: Date | null): string | null {
 }
 
 /** Apply the committed DDL. Idempotent — safe at the start of every ingest. */
+/**
+ * Create the database/schema the connection points at, if they do not exist yet.
+ *
+ * A brand-new Snowflake account has no PULSE database, and connecting with a
+ * `database` that does not exist leaves the session with no current namespace —
+ * the first CREATE TABLE then fails with "This session does not have a current
+ * database". Bootstrapping here makes the pipeline runnable against a fresh
+ * account with nothing but credentials, instead of requiring a manual worksheet
+ * step that is easy to get wrong.
+ */
+async function ensureNamespace(): Promise<void> {
+  // Read the namespace directly rather than validating the whole Snowflake
+  // config: credentials are sfQuery's concern, and this must stay a no-op when
+  // no database is configured (including under test, where nothing is set).
+  const database = process.env.SNOWFLAKE_DATABASE?.trim();
+  const schema = process.env.SNOWFLAKE_SCHEMA?.trim();
+  if (database === undefined || database === "") {
+    return;
+  }
+  // Identifiers come from our own env, never user input; still keep them strict.
+  const safe = (value: string): string => {
+    if (!/^[A-Za-z_][A-Za-z0-9_$]*$/.test(value)) {
+      throw new Error(`Unsafe Snowflake identifier: ${value}`);
+    }
+    return value.toUpperCase();
+  };
+  const db = safe(database);
+  const sc = safe(schema === undefined || schema === "" ? "PUBLIC" : schema);
+  await sfQuery(`CREATE DATABASE IF NOT EXISTS ${db}`);
+  await sfQuery(`USE DATABASE ${db}`);
+  await sfQuery(`CREATE SCHEMA IF NOT EXISTS ${sc}`);
+  await sfQuery(`USE SCHEMA ${sc}`);
+}
+
 export async function ensureSchema(): Promise<void> {
+  await ensureNamespace();
   const statements = readFileSync(SCHEMA_PATH, "utf8")
     .split(";")
     .map((statement) => statement.trim())

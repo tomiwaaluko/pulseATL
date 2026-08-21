@@ -1,0 +1,102 @@
+name: Ingest
+
+# Runs the Pulse ATL ingest pipeline from a GitHub-hosted runner.
+#
+# Why this exists: the orchestration sandbox cannot reach Postgres:5432, Snowflake,
+# or the Atlanta data portals, and Render cron jobs require a paid plan. A runner
+# has open egress, so this workflow is the reproducible way to populate the
+# deployed Postgres cache — on a schedule, or on demand.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   DATABASE_URL         external Render Postgres URL (must end with ?sslmode=require)
+#   SNOWFLAKE_ACCOUNT    account identifier (e.g. ORG-ACCOUNT or locator.region)
+#   SNOWFLAKE_USER
+#   SNOWFLAKE_PRIVATE_KEY  PKCS#8 PEM (preferred; password auth is MFA-blocked)
+#   SNOWFLAKE_PASSWORD     legacy fallback, only for non-MFA accounts
+#   SNOWFLAKE_WAREHOUSE  e.g. COMPUTE_WH
+#   SNOWFLAKE_DATABASE   e.g. PULSE
+#   GEMINI_API_KEY
+# Secrets are never printed: the run summary below reports counts only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Which ingest path to run"
+        type: choice
+        default: seed
+        options:
+          - seed              # committed fixtures + date shift -> Snowflake -> Postgres
+          - live              # fetch the portals in SOURCES.md (may be slow/blocked)
+          - seed-no-snowflake # fixtures + local stats, skips Snowflake entirely
+  # Pushing anything to this branch runs a seed ingest. It exists because API
+  # tokens without `actions: write` cannot fire workflow_dispatch, but can push.
+  push:
+    branches:
+      - ops/run-ingest
+
+  # Hourly schedule is disabled until Snowflake key-pair auth lands: password auth
+  # is blocked by MFA (394509), so every scheduled run failed. Re-enable by
+  # uncommenting once an ingest run succeeds.
+  # schedule:
+  #   - cron: "17 * * * *"
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Build
+        run: npm run build
+
+      - name: Resolve ingest flags
+        id: flags
+        env:
+          MODE: ${{ inputs.mode || 'seed' }}
+        run: |
+          case "$MODE" in
+            seed)              echo "args=--seed" >> "$GITHUB_OUTPUT" ;;
+            live)              echo "args=" >> "$GITHUB_OUTPUT" ;;
+            seed-no-snowflake) echo "args=--seed --no-snowflake" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unknown mode: $MODE" >&2; exit 1 ;;
+          esac
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Run ingest (${{ steps.flags.outputs.mode }})
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: ${{ secrets.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: PUBLIC
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run ingest -- ${{ steps.flags.outputs.args }}
+
+      - name: Verify deployed cache
+        if: always()
+        run: |
+          echo "### Ingest (${{ steps.flags.outputs.mode }})" >> "$GITHUB_STEP_SUMMARY"
+          # The service cold-starts on the free plan; give it time to wake up.
+          health=$(curl -s --max-time 90 https://pulse-atl.onrender.com/api/health || echo '{}')
+          echo "health: $health"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$health" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

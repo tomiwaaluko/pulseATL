@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { sfQuery } = vi.hoisted(() => ({ sfQuery: vi.fn() }));
 
@@ -262,5 +262,47 @@ describe("cortexFindings", () => {
     const result = await cortexFindings(stats, medians);
 
     expect(result).not.toContain("super-secret");
+  });
+});
+
+describe("ensureSchema namespace bootstrap", () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sfQuery.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    process.env = { ...original };
+  });
+
+  it("creates and selects the configured database and schema before the DDL", async () => {
+    process.env.SNOWFLAKE_DATABASE = "pulse";
+    process.env.SNOWFLAKE_SCHEMA = "public";
+    await ensureSchema();
+
+    const statements = sfQuery.mock.calls.map((call) => call[0] as string);
+    expect(statements.slice(0, 4)).toEqual([
+      "CREATE DATABASE IF NOT EXISTS PULSE",
+      "USE DATABASE PULSE",
+      "CREATE SCHEMA IF NOT EXISTS PUBLIC",
+      "USE SCHEMA PUBLIC",
+    ]);
+    // The table DDL must still run, after the namespace exists.
+    expect(statements.join("\n")).toMatch(/CREATE TABLE IF NOT EXISTS INCIDENTS/i);
+  });
+
+  it("is a no-op when no database is configured", async () => {
+    delete process.env.SNOWFLAKE_DATABASE;
+    await ensureSchema();
+
+    const statements = sfQuery.mock.calls.map((call) => call[0] as string);
+    expect(statements.some((sql) => /CREATE DATABASE/i.test(sql))).toBe(false);
+  });
+
+  it("rejects an unsafe database identifier instead of interpolating it", async () => {
+    process.env.SNOWFLAKE_DATABASE = "pulse; DROP DATABASE prod";
+    await expect(ensureSchema()).rejects.toThrow(/Unsafe Snowflake identifier/);
   });
 });
