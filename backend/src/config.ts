@@ -22,14 +22,34 @@ export function getConfig(): Config {
  * only DATABASE_URL). This block is validated lazily — the first time a
  * Snowflake connection is actually opened — never at import time.
  */
+/**
+ * Treat an empty string as "not provided".
+ *
+ * Secret stores substitute an EMPTY STRING for a secret that does not exist —
+ * GitHub Actions does this for every `${{ secrets.X }}` that is unset — so an
+ * absent optional credential arrives as "" rather than undefined. Without this,
+ * deleting an unused secret turns a valid config into a validation error.
+ */
+const optionalSecret = () =>
+  z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().min(1).optional(),
+  );
+
 const snowflakeConfigSchema = z.object({
   SNOWFLAKE_ACCOUNT: z.string().min(1),
   SNOWFLAKE_USER: z.string().min(1),
-  SNOWFLAKE_PASSWORD: z.string().min(1),
-  SNOWFLAKE_WAREHOUSE: z.string().min(1).optional(),
-  SNOWFLAKE_DATABASE: z.string().min(1).optional(),
-  SNOWFLAKE_SCHEMA: z.string().min(1).optional(),
-  SNOWFLAKE_ROLE: z.string().min(1).optional(),
+  // Password auth is legacy: Snowflake MFA blocks it for programmatic access
+  // (error 394509), so key-pair auth is the supported path going forward.
+  // Both are optional here — snowflakeClient.ts picks one and throws a clear
+  // error naming both env vars if neither is set.
+  SNOWFLAKE_PASSWORD: optionalSecret(),
+  SNOWFLAKE_PRIVATE_KEY: optionalSecret(),
+  SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: optionalSecret(),
+  SNOWFLAKE_WAREHOUSE: optionalSecret(),
+  SNOWFLAKE_DATABASE: optionalSecret(),
+  SNOWFLAKE_SCHEMA: optionalSecret(),
+  SNOWFLAKE_ROLE: optionalSecret(),
 });
 
 export type SnowflakeConfig = z.infer<typeof snowflakeConfigSchema>;

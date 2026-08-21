@@ -1,0 +1,104 @@
+name: Ingest
+
+# Triggers the Pulse ATL ingest by calling the deployed service's admin endpoint.
+#
+# Why it works this way: the pipeline used to run here, on the runner. It cannot.
+# External TLS connections to the Render Postgres instance are terminated for
+# everything outside the service — six client configurations were probed and all
+# failed, while a no-TLS attempt returned a genuine `SSL/TLS required`
+# (SQLSTATE 28000), proving TCP reaches the real database. Render's own MCP query
+# tool hits the same wall. Only the service itself can write to its database, so
+# the runner's job is to ask it to.
+#
+# Required repository secret:
+#   INGEST_TOKEN   matches INGEST_TOKEN on the Render service
+#
+# The token is passed as a query parameter, so it is kept out of the URL that
+# gets echoed: curl reads it from a config file on stdin rather than argv.
+
+on:
+  workflow_dispatch:
+    inputs:
+      snowflake:
+        description: "Snowflake path"
+        type: choice
+        default: "on"
+        options:
+          - "on"    # full pipeline: Snowflake MERGE -> stats -> Cortex -> Gemini
+          - "off"   # local aggregation; cortex_findings gets the unavailable marker
+  # Pushing anything to this branch runs an ingest. It exists because API tokens
+  # without `actions: write` cannot fire workflow_dispatch, but can push.
+  push:
+    branches:
+      - ops/run-ingest
+
+  schedule:
+    - cron: "17 * * * *"
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE: https://pulse-atl.onrender.com
+      SNOWFLAKE_MODE: ${{ inputs.snowflake || 'on' }}
+    steps:
+      - name: Check the token is configured
+        run: |
+          if [ -z "${{ secrets.INGEST_TOKEN }}" ]; then
+            echo "::error::INGEST_TOKEN is not set; the endpoint would answer 401"
+            exit 1
+          fi
+
+      - name: Record the current ingest timestamp
+        id: before
+        run: |
+          health=$(curl -s --max-time 120 "$BASE/api/health" || echo '{}')
+          echo "before=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('last_ingest') or 'none')" 2>/dev/null || echo 'none')" >> "$GITHUB_OUTPUT"
+          echo "health before: $health"
+
+      - name: Trigger the ingest
+        env:
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+        run: |
+          set -o pipefail
+          query="token=$INGEST_TOKEN"
+          if [ "$SNOWFLAKE_MODE" = "off" ]; then query="$query&snowflake=off"; fi
+
+          # --config - reads the URL from stdin, so the token never appears in
+          # argv (visible in `ps`) or in any command echo.
+          printf 'url = "%s/api/admin/ingest?%s"\n' "$BASE" "$query" \
+            | curl -s --max-time 300 --config - > response.json || true
+
+          # The response carries no secrets: it is {ok, snowflake_skipped, counts}
+          # or {ok:false, error} with credentials already redacted server-side.
+          echo "response: $(cat response.json)"
+
+      - name: Confirm the cache actually advanced
+        run: |
+          # The endpoint answers 202 for runs over 20s, so a response alone does
+          # not mean the ingest finished. Poll until last_ingest moves.
+          before='${{ steps.before.outputs.before }}'
+          echo "waiting for last_ingest to move from: $before"
+          for _ in $(seq 1 30); do
+            health=$(curl -s --max-time 60 "$BASE/api/health" || echo '{}')
+            now=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('last_ingest') or 'none')" 2>/dev/null || echo 'none')
+            rows=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('row_count','?'))" 2>/dev/null || echo '?')
+            if [ "$now" != "$before" ] && [ "$now" != "none" ]; then
+              echo "::notice::ingest completed at $now ($rows rows)"
+              {
+                echo "### Ingest complete"
+                echo '```json'
+                echo "$health"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::last_ingest never advanced past $before"
+          exit 1

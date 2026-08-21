@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { sfQuery } = vi.hoisted(() => ({ sfQuery: vi.fn() }));
 
@@ -6,9 +6,11 @@ vi.mock("../src/snowflakeClient.js", () => ({ sfQuery }));
 
 import {
   CORTEX_FALLBACK_PREFIX,
+  CORTEX_MODEL_CANDIDATES,
   cityMedians,
   computeNpuStats,
   cortexFindings,
+  resetCortexModel,
   ensureSchema,
   loadIncidents,
 } from "../src/ingest/load.js";
@@ -220,24 +222,81 @@ describe("cityMedians", () => {
 });
 
 describe("cortexFindings", () => {
+  const ORIGINAL_MODEL = process.env.SNOWFLAKE_CORTEX_MODEL;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    resetCortexModel();
+    delete process.env.SNOWFLAKE_CORTEX_MODEL;
   });
 
-  it("runs CORTEX.COMPLETE inside Snowflake with the locked model and prompt", async () => {
+  afterEach(() => {
+    if (ORIGINAL_MODEL === undefined) delete process.env.SNOWFLAKE_CORTEX_MODEL;
+    else process.env.SNOWFLAKE_CORTEX_MODEL = ORIGINAL_MODEL;
+  });
+
+  it("runs CORTEX.COMPLETE inside Snowflake with the first candidate model and the locked prompt", async () => {
     sfQuery.mockResolvedValue([{ FINDINGS: "Blight cases rose 40% against a flat city median." }]);
 
     const result = await cortexFindings(stats, medians);
 
     expect(result).toBe("Blight cases rose 40% against a flat city median.");
     const [sql, binds] = sfQuery.mock.calls[0] as [string, unknown[]];
-    expect(sql).toMatch(/SNOWFLAKE\.CORTEX\.COMPLETE\('mistral-large2'/);
+    expect(sql).toContain(`SNOWFLAKE.CORTEX.COMPLETE('${CORTEX_MODEL_CANDIDATES[0]}'`);
     expect(sql).toContain("You are a civic data analyst.");
     expect(sql).toMatch(/2 most significant anomalies or trends in <=80 words, neutral tone/);
     expect(sql).toMatch(/AS findings/);
     expect(binds).toHaveLength(1);
     const payload = JSON.parse(binds[0] as string);
     expect(payload).toEqual({ npu: "V", stats, city_medians: medians });
+  });
+
+  it("falls through to the next candidate when a model is retired", async () => {
+    // The real failure: Cortex answers 400 "has been in legacy state".
+    sfQuery
+      .mockRejectedValueOnce(new Error("The model mistral-large2 has been in legacy state"))
+      .mockResolvedValueOnce([{ FINDINGS: "Second model answered." }]);
+
+    const result = await cortexFindings(stats, medians);
+
+    expect(result).toBe("Second model answered.");
+    expect(sfQuery).toHaveBeenCalledTimes(2);
+    expect(sfQuery.mock.calls[1][0]).toContain(`'${CORTEX_MODEL_CANDIDATES[1]}'`);
+  });
+
+  it("reuses the model that worked instead of retrying the dead ones", async () => {
+    sfQuery
+      .mockRejectedValueOnce(new Error("legacy state"))
+      .mockResolvedValue([{ FINDINGS: "ok" }]);
+
+    await cortexFindings(stats, medians);
+    const afterFirst = sfQuery.mock.calls.length;
+    await cortexFindings(stats, medians);
+
+    // One extra call, not another walk down the candidate list.
+    expect(sfQuery.mock.calls.length).toBe(afterFirst + 1);
+    expect(sfQuery.mock.calls[afterFirst][0]).toContain(`'${CORTEX_MODEL_CANDIDATES[1]}'`);
+  });
+
+  it("honours SNOWFLAKE_CORTEX_MODEL exactly, without substituting a candidate", async () => {
+    process.env.SNOWFLAKE_CORTEX_MODEL = "llama3.1-8b";
+    sfQuery.mockRejectedValue(new Error("nope"));
+
+    const result = await cortexFindings(stats, medians);
+
+    expect(sfQuery).toHaveBeenCalledTimes(1);
+    expect(sfQuery.mock.calls[0][0]).toContain("'llama3.1-8b'");
+    expect(result).toContain(CORTEX_FALLBACK_PREFIX);
+  });
+
+  it("refuses a model name that is not a plain identifier", async () => {
+    process.env.SNOWFLAKE_CORTEX_MODEL = "x', 'injected";
+    sfQuery.mockResolvedValue([{ FINDINGS: "should not be reached" }]);
+
+    const result = await cortexFindings(stats, medians);
+
+    expect(sfQuery).not.toHaveBeenCalled();
+    expect(result).toContain(CORTEX_FALLBACK_PREFIX);
   });
 
   it("returns a clearly-marked fallback instead of throwing when Cortex fails", async () => {
@@ -262,5 +321,47 @@ describe("cortexFindings", () => {
     const result = await cortexFindings(stats, medians);
 
     expect(result).not.toContain("super-secret");
+  });
+});
+
+describe("ensureSchema namespace bootstrap", () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sfQuery.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    process.env = { ...original };
+  });
+
+  it("creates and selects the configured database and schema before the DDL", async () => {
+    process.env.SNOWFLAKE_DATABASE = "pulse";
+    process.env.SNOWFLAKE_SCHEMA = "public";
+    await ensureSchema();
+
+    const statements = sfQuery.mock.calls.map((call) => call[0] as string);
+    expect(statements.slice(0, 4)).toEqual([
+      "CREATE DATABASE IF NOT EXISTS PULSE",
+      "USE DATABASE PULSE",
+      "CREATE SCHEMA IF NOT EXISTS PUBLIC",
+      "USE SCHEMA PUBLIC",
+    ]);
+    // The table DDL must still run, after the namespace exists.
+    expect(statements.join("\n")).toMatch(/CREATE TABLE IF NOT EXISTS INCIDENTS/i);
+  });
+
+  it("is a no-op when no database is configured", async () => {
+    delete process.env.SNOWFLAKE_DATABASE;
+    await ensureSchema();
+
+    const statements = sfQuery.mock.calls.map((call) => call[0] as string);
+    expect(statements.some((sql) => /CREATE DATABASE/i.test(sql))).toBe(false);
+  });
+
+  it("rejects an unsafe database identifier instead of interpolating it", async () => {
+    process.env.SNOWFLAKE_DATABASE = "pulse; DROP DATABASE prod";
+    await expect(ensureSchema()).rejects.toThrow(/Unsafe Snowflake identifier/);
   });
 });

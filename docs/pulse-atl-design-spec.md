@@ -15,7 +15,7 @@ Consumes: `pulse-atl-ideation-spec.md`. Every open question from §13 is resolve
 | Ingest | **TS job on Render Workflows** (fallback: Render Cron Job if Workflows SDK blocks) | Prize requires Workflows; fallback protects the demo |
 | App DB | **Render Postgres** — cache of computed reports + chat context | Keeps dashboard fast + survives Snowflake trial hiccups during live demo |
 | Warehouse | **Snowflake trial** via `snowflake-sdk` (Node); **Cortex** via `SNOWFLAKE.CORTEX.COMPLETE` in SQL | Hits "Snowflake API + LLMs" prize language directly |
-| Gemini | **gemini-2.0-flash** via `@google/genai` SDK | Fast + cheap; reports and chat |
+| Gemini | **gemini-2.5-flash** via `@google/genai` SDK (override with `GEMINI_MODEL`) | Fast + cheap; reports and chat. Was `gemini-2.0-flash`, which Google has since retired — it is no longer in the models list the API key can reach, so every call returned `ApiError`. |
 | Styling | Tailwind CDN-free (vite plugin), dark map-first UI | Agents move fastest in Tailwind |
 | Repo | Monorepo, single Render Blueprint (`render.yaml`) | One-command infra |
 
@@ -101,10 +101,18 @@ Precomputed for all 25 NPUs at end of every ingest run. Dashboard reads are cach
 1. Aggregate SQL: counts by category (90d vs prior 90d), median days-to-resolution, open case count → `stats_json`.
 2. Cortex call *inside Snowflake SQL*:
 ```sql
-SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-large2',
+SELECT SNOWFLAKE.CORTEX.COMPLETE('<model>',
   'You are a civic data analyst. Given these NPU stats vs city medians, identify the 2 most significant anomalies or trends in <=80 words, neutral tone: ' || :stats_and_medians_json
 ) AS findings;
 ```
+
+The prompt is locked; the **model is not**. `mistral-large2` was the original
+choice and Cortex has since moved it to legacy state, answering every call with
+`400 'The model mistral-large2 has been in legacy state, please use other
+models.'` — so all 25 NPUs silently took the fallback. Which models a Cortex
+account can reach also varies by region and entitlement. `load.ts` therefore
+tries `CORTEX_MODEL_CANDIDATES` in order and reuses the first that answers,
+or uses `SNOWFLAKE_CORTEX_MODEL` exactly when it is set.
 
 **Gemini side (`geminiClient.ts`):**
 - `generate_report(npu, stats_json, cortex_findings) -> markdown` — report card: headline, 3 bullets, trend, "who to contact" (NPU meeting info from a small static dict).

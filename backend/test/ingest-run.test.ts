@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  NO_SNOWFLAKE_CORTEX_MESSAGE,
   REPORT_PLACEHOLDER,
   fullNpuStats,
   parseArgs,
@@ -8,7 +9,8 @@ import {
   type IngestDeps,
 } from "../src/ingest/run.js";
 import { cityMedians } from "../src/ingest/load.js";
-import { MILLIS_PER_DAY, SOURCES, listNpus, loadNpuIndex } from "../src/ingest/sources.js";
+import { normalizeRecord } from "../src/ingest/normalize.js";
+import { MILLIS_PER_DAY, SOURCES, listNpus, loadNpuIndex, shiftIncidentsToRecent } from "../src/ingest/sources.js";
 import type { Incident, NpuStats, Report } from "../src/types.js";
 
 const NOW = new Date("2026-08-12T16:00:00.000Z");
@@ -85,8 +87,13 @@ function harness(overrides: Partial<IngestDeps> = {}): Harness {
 
 describe("parseArgs", () => {
   it("defaults to live sources and enables seed mode with --seed", () => {
-    expect(parseArgs([])).toEqual({ seed: false });
-    expect(parseArgs(["--seed"])).toEqual({ seed: true });
+    expect(parseArgs([])).toEqual({ seed: false, noSnowflake: false });
+    expect(parseArgs(["--seed"])).toEqual({ seed: true, noSnowflake: false });
+  });
+
+  it("enables the no-snowflake fallback with --no-snowflake", () => {
+    expect(parseArgs(["--no-snowflake"])).toEqual({ seed: false, noSnowflake: true });
+    expect(parseArgs(["--seed", "--no-snowflake"])).toEqual({ seed: true, noSnowflake: true });
   });
 });
 
@@ -158,9 +165,15 @@ describe("runIngest --seed", () => {
     const atl311 = summary.sources.find((item) => item.source === "atl311");
     expect(apd?.fetched).toBe(250);
     expect(apd?.normalized).toBeGreaterThan(200);
-    // The committed ATL311 export carries no coordinates, so every row is rejected.
-    expect(atl311).toEqual({ source: "atl311", fetched: 250, normalized: 0, rejected: 250 });
-    expect(logs.some((line) => line.includes("[atl311] 250 rows read, 0 normalized, 250 rejected"))).toBe(true);
+    // PULSE-19: the fixture is geocoded, but a Census non-match, an out-of-bounds
+    // match, or a real address outside every NPU polygon (the export also covers
+    // other Fulton County cities, e.g. College Park) all still reject — not every
+    // row normalizes.
+    expect(atl311?.fetched).toBe(250);
+    expect(atl311?.normalized).toBeGreaterThan(100);
+    expect(atl311?.rejected).toBeGreaterThan(0);
+    expect(atl311?.normalized).toBe(250 - (atl311?.rejected ?? 0));
+    expect(logs.some((line) => line.includes("[atl311]") && line.includes("rows read"))).toBe(true);
   });
 
   it("writes the placeholder narrative when Gemini is unconfigured", async () => {
@@ -206,5 +219,111 @@ describe("runIngest --seed", () => {
     expect(reports.size).toBe(25);
     expect(second.incidents).toBe(first.incidents);
     expect(new Map([...reports].map(([npu, report]) => [npu, report.pulse_score]))).toEqual(scores);
+  });
+});
+
+describe("runIngest --no-snowflake", () => {
+  it("writes a valid report row for every NPU without calling any Snowflake dep", async () => {
+    const { deps, reports } = harness();
+    const summary = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(summary.npusReported).toBe(25);
+    expect(reports.size).toBe(25);
+    expect([...reports.keys()].sort()).toEqual(listNpus());
+    // No Snowflake dep is ever reached on this path — a bad account/credentials
+    // must not stop the demo from having reports.
+    expect(deps.ensureSchema).not.toHaveBeenCalled();
+    expect(deps.loadIncidents).not.toHaveBeenCalled();
+    expect(deps.computeNpuStats).not.toHaveBeenCalled();
+    expect(deps.cortexFindings).not.toHaveBeenCalled();
+
+    for (const report of reports.values()) {
+      expect(Number.isFinite(report.pulse_score)).toBe(true);
+      expect(report.pulse_score).toBeGreaterThanOrEqual(0);
+      expect(report.pulse_score).toBeLessThanOrEqual(100);
+      expect(["improving", "stable", "worsening"]).toContain(report.trend);
+      expect(report.cortex_findings).toBe(NO_SNOWFLAKE_CORTEX_MESSAGE);
+      expect(report.updated_at).toEqual(NOW);
+      expect((report.stats_json as NpuStats).npu).toBe(report.npu);
+    }
+  });
+
+  it("always fixtures-and-shifts even when --seed was not also passed", async () => {
+    const { deps, reports, logs } = harness();
+    await runIngest(deps, { seed: false, noSnowflake: true });
+
+    const active = [...reports.values()].filter(
+      (report) => (report.stats_json as NpuStats).incident_count_90d > 0,
+    );
+    expect(active.length).toBeGreaterThan(5);
+    expect(logs.some((line) => line.includes("[apd_crime]") && line.includes("rows read"))).toBe(true);
+    expect(logs.some((line) => line.includes("[atl311]") && line.includes("rows read"))).toBe(true);
+  });
+
+  it("leaves median_resolution_days null (not 0) for NPUs with no resolved incidents", async () => {
+    const { deps, reports } = harness();
+    await runIngest(deps, { seed: false, noSnowflake: true });
+
+    // Independently derive, the same way collectIncidents does (per-source
+    // normalize then date-shift), which NPUs have at least one resolved
+    // incident inside the 180-day window computeLocalNpuStats uses.
+    const npuIndex = loadNpuIndex();
+    const incidents = SOURCES.flatMap((source) => {
+      const normalized = source.readFixture()
+        .map((row) => normalizeRecord(row, source.id, npuIndex))
+        .filter((item): item is Incident => item !== null);
+      return shiftIncidentsToRecent(normalized, NOW);
+    });
+    const windowStart = NOW.getTime() - 180 * MILLIS_PER_DAY;
+    const resolvedNpus = new Set(
+      incidents
+        .filter((incident) => incident.occurred_at.getTime() >= windowStart && incident.resolved_at !== null)
+        .map((incident) => incident.npu),
+    );
+
+    // APD never publishes a resolved_at, but PULSE-19 geocoded ATL311 rows do —
+    // at least one NPU they cover must now show a real median, not a permanent null.
+    expect(resolvedNpus.size).toBeGreaterThan(0);
+
+    for (const report of reports.values()) {
+      const median = (report.stats_json as NpuStats).median_resolution_days;
+      if (resolvedNpus.has(report.npu)) {
+        expect(median).not.toBeNull();
+      } else {
+        // Zero resolved incidents in the window: median must stay null, never 0.
+        expect(median).toBeNull();
+      }
+    }
+  });
+
+  it("is idempotent: a second run rewrites the same 25 rows", async () => {
+    const { deps, reports } = harness();
+    const first = await runIngest(deps, { seed: false, noSnowflake: true });
+    const scores = new Map([...reports].map(([npu, report]) => [npu, report.pulse_score]));
+
+    const second = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(reports.size).toBe(25);
+    expect(second.incidents).toBe(first.incidents);
+    expect(second.npusReported).toBe(25);
+    expect(new Map([...reports].map(([npu, report]) => [npu, report.pulse_score]))).toEqual(scores);
+  });
+
+  it("writes the placeholder narrative when Gemini is unconfigured", async () => {
+    const { deps, reports } = harness();
+    const summary = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(summary.geminiReports).toBe(0);
+    expect([...reports.values()].every((report) => report.gemini_report === REPORT_PLACEHOLDER)).toBe(true);
+  });
+
+  it("still calls Gemini when a key is configured", async () => {
+    const generateReport = vi.fn(async (npu: string) => `Report for ${npu}`);
+    const { deps, reports } = harness({ generateReport });
+    const summary = await runIngest(deps, { seed: false, noSnowflake: true });
+
+    expect(generateReport).toHaveBeenCalledTimes(25);
+    expect(summary.geminiReports).toBe(25);
+    expect(reports.get("A")?.gemini_report).toBe("Report for A");
   });
 });

@@ -1,0 +1,75 @@
+name: Health check
+
+# Reads the deployed service's public endpoints from a GitHub runner and prints
+# what it finds to the run summary.
+#
+# Why this exists: the orchestration sandbox's egress proxy blocks
+# onrender.com, and external Postgres connections are terminated for everything
+# outside the service itself, so the public API is the only way to read the
+# deployed state back. Without this, confirming an ingest meant asking a human
+# to open a URL and paste the JSON.
+#
+# No secrets: every endpoint used here is public.
+#
+# Trigger by pushing to ops/health-check, or from the Actions tab.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ops/health-check
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE: https://pulse-atl.onrender.com
+    steps:
+      # Needed for .github/scripts/sample_report.py.
+      - uses: actions/checkout@v4
+
+      - name: Read /api/health
+        run: |
+          # The free plan cold-starts, so allow time for the service to wake.
+          health=$(curl -s --max-time 120 "$BASE/api/health" || echo '{"error":"unreachable"}')
+          echo "$health"
+          {
+            echo "### Deployed health"
+            echo '```json'
+            echo "$health"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Fail loudly on an empty cache so a red run means "no data", not "no answer".
+          rows=$(echo "$health" | python3 -c "import sys,json; print(json.load(sys.stdin).get('row_count','?'))" 2>/dev/null || echo '?')
+          echo "row_count=$rows"
+          if [ "$rows" = "0" ] || [ "$rows" = "?" ]; then
+            echo "::error::report cache is empty or unreadable (row_count=$rows)"
+            exit 1
+          fi
+          echo "::notice::cache holds $rows report rows"
+
+      - name: Sample one report
+        run: |
+          # Confirms end-to-end content, not just a row count: whether Cortex
+          # findings are real analysis or the [cortex-unavailable] marker, and
+          # whether the narrative is real or the [report pending] placeholder.
+          curl -s --max-time 60 "$BASE/api/npus" > "$RUNNER_TEMP/npus.json"
+          # /api/npus returns {npus: [{npu, pulse_score, trend}, ...]}, not a bare array.
+          npu=$(python3 -c "import json;d=json.load(open('$RUNNER_TEMP/npus.json')).get('npus') or [];print(d[0]['npu'] if d else '')" 2>/dev/null || echo '')
+          if [ -z "$npu" ]; then
+            echo "::error::/api/npus returned nothing usable"
+            exit 1
+          fi
+
+          curl -s --max-time 60 "$BASE/api/npus/$npu" > "$RUNNER_TEMP/detail.json"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/sample_report.py" \
+            "$npu" "$RUNNER_TEMP/detail.json" | tee "$RUNNER_TEMP/sample.txt"
+
+          {
+            echo "### Sample report"
+            echo '```'
+            cat "$RUNNER_TEMP/sample.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

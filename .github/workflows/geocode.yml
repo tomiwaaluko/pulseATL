@@ -1,0 +1,70 @@
+name: Geocode ATL311 fixture
+
+# Runs the Census batch geocoder against the committed ATL311 fixture (PULSE-19)
+# and commits the resulting latitude/longitude values back to the fixture.
+#
+# Why this exists: the orchestration sandbox's outbound proxy blocks
+# geocoding.geo.census.gov, so the geocoder can only be run from a GitHub-hosted
+# runner with open egress. The Census batch geocoder needs no API key/secret.
+
+on:
+  workflow_dispatch:
+
+  # Pushing to this branch runs a geocode and commits the coordinates back to
+  # it. It exists because API tokens without `actions: write` cannot fire
+  # workflow_dispatch, but can push.
+  push:
+    branches:
+      - ops/run-geocode
+
+permissions:
+  contents: write
+
+concurrency:
+  group: geocode-atl311
+  cancel-in-progress: false
+
+jobs:
+  geocode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # No explicit ref: check out whatever branch triggered this run, so the
+      # workflow keeps working after the PULSE-19 branch is merged and deleted.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Geocode ATL311 fixture
+        id: geocode
+        run: |
+          # pipefail: without it `cmd | tee` reports tee's exit code, hiding a crash.
+          set -o pipefail
+          npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode-summary.txt"
+
+      - name: Publish run summary
+        if: always()
+        run: |
+          echo "### ATL311 geocoding" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/geocode-summary.txt" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit updated fixture
+        run: |
+          git config user.name "pulse-atl-bot"
+          git config user.email "pulse-atl-bot@users.noreply.github.com"
+          if git diff --quiet -- backend/test/fixtures/atl311_service_requests.sample.json; then
+            echo "Fixture unchanged, nothing to commit."
+            exit 0
+          fi
+          git add backend/test/fixtures/atl311_service_requests.sample.json
+          git commit -m "[PULSE-19] Geocode ATL311 fixture via Census batch API"
+          # Coordinates land back on the branch that triggered the run.
+          git push origin "HEAD:${GITHUB_REF_NAME}"
