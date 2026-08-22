@@ -141,6 +141,7 @@ Grounding rules — follow them exactly:
 Use ONLY the verified figures listed below. Do not estimate, do not extrapolate, do not round, and do not introduce any statistic, percentage, ranking, or dollar amount that is not in that list.
 If something is not in the list, leave it out of the letter entirely. Never guess a missing number, never write a placeholder number, and never describe a number as approximate to cover a gap.
 Cite at least three of the verified figures, each with the label it is given below.
+The pulse score is NOT a verified figure and is not supplied to you: never state, quote, or characterise a pulse score, rank, or grade for this NPU, even if one appears in the report card below.
 Do not invent names, titles, districts, addresses, phone numbers, dates, meetings, incidents, or events. Address the recipient as "Dear Council Member" and sign off as "A resident of NPU ${npu}".
 If the verified figures do not support a point you want to make, say plainly that the available data does not show it rather than filling the gap.
 Keep the letter under 300 words: plain text, no Markdown, one concrete ask at the end.

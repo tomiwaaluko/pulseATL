@@ -210,6 +210,7 @@ interface ReportPanelProps {
   error: string | null;
   onCompare: () => void;
   onAsk: () => void;
+  onLetter: () => void;
 }
 
 export default function ReportPanel({
@@ -218,6 +219,7 @@ export default function ReportPanel({
   error,
   onCompare,
   onAsk,
+  onLetter,
 }: ReportPanelProps): JSX.Element {
   if (loading) {
     return <ReportPanelSkeleton />;
@@ -278,7 +280,7 @@ export default function ReportPanel({
           </div>
         </div>
 
-        <div className="mt-5 flex gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onCompare}
@@ -294,6 +296,14 @@ export default function ReportPanel({
             data-testid="ask-button"
           >
             Ask about this area
+          </button>
+          <button
+            type="button"
+            onClick={onLetter}
+            className="w-full rounded-md border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-500/25"
+            data-testid="letter-button"
+          >
+            Draft a letter to my council member
           </button>
         </div>
       </div>

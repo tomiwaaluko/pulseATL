@@ -4,6 +4,8 @@ import type {
   ChatResponse,
   CompareResponse,
   HealthResponse,
+  LetterRequest,
+  LetterResponse,
   NpuDetail,
   NpuListResponse,
 } from "./types";
@@ -63,6 +65,15 @@ export function fetchCompare(a: string, b: string): Promise<CompareResponse> {
 /** POST /api/chat — grounded Q&A about one NPU. */
 export function postChat(body: ChatRequest): Promise<ChatResponse> {
   return request<ChatResponse>("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/** POST /api/letter — council advocacy letter drafted from one NPU's cached stats. */
+export function postLetter(body: LetterRequest): Promise<LetterResponse> {
+  return request<LetterResponse>("/api/letter", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

@@ -5,6 +5,7 @@ import { getAllReports, initSchema } from "./db";
 import { npusRouter } from "./routes/npus";
 import { compareRouter } from "./routes/compare";
 import { chatRouter } from "./routes/chat";
+import { letterRouter } from "./routes/letter";
 import { adminRouter } from "./routes/admin";
 
 function errorStatus(err: unknown): number {
@@ -26,6 +27,7 @@ export function createApp(): Express {
   app.use("/api/npus", npusRouter);
   app.use("/api/compare", compareRouter);
   app.use("/api/chat", chatRouter);
+  app.use("/api/letter", letterRouter);
   app.use("/api/admin", adminRouter);
 
   app.get("/api/health", async (_req, res) => {
