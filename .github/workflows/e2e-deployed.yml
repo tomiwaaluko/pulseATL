@@ -1,0 +1,91 @@
+name: E2E against deployed site
+
+# Runs e2e/tests/deployed.spec.ts against https://pulse-atl.onrender.com with a
+# real browser and no API mocking.
+#
+# Why this exists: the orchestration sandbox's egress proxy blocks
+# onrender.com (CONNECT answers 403) and tile.openstreetmap.org, so the
+# deployed suite cannot be executed there at all. A GitHub-hosted runner has
+# open egress, which is the same reason .github/workflows/health.yml exists —
+# this workflow is its browser-level counterpart: health.yml curls the JSON,
+# this one drives the actual dashboard and asserts the rendered text.
+#
+# No secrets: every endpoint used here is public.
+#
+# Trigger by pushing to ops/run-e2e, or from the Actions tab.
+
+on:
+  workflow_dispatch:
+
+  # Pushing to this branch runs the deployed suite. It exists because API
+  # tokens without `actions: write` cannot fire workflow_dispatch, but can push.
+  push:
+    branches:
+      - ops/run-e2e
+
+concurrency:
+  group: e2e-deployed
+  cancel-in-progress: false
+
+jobs:
+  deployed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      E2E_BASE_URL: https://pulse-atl.onrender.com
+    steps:
+      # No explicit ref: check out whatever branch triggered this run, so the
+      # workflow keeps working after the PULSE-18 branch is merged and deleted.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run deployed suite
+        id: deployed
+        working-directory: e2e
+        run: |
+          # pipefail: without it `cmd | tee` reports tee's exit code, hiding a
+          # failing test run behind a green step.
+          set -o pipefail
+          # Render's free plan cold-starts; the spec's own wake loop plus the
+          # remote timeouts in playwright.config.ts absorb the ~50s first hit.
+          npx playwright test deployed.spec.ts | tee "$RUNNER_TEMP/deployed.txt"
+
+      - name: Publish run summary
+        if: always()
+        run: |
+          {
+            echo "### Deployed E2E — $E2E_BASE_URL"
+            echo ''
+            echo '```'
+            cat "$RUNNER_TEMP/deployed.txt" 2>/dev/null || echo 'no output captured'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Surface the measured numbers as notices so they are readable without
+          # opening the log.
+          if [ -f "$RUNNER_TEMP/deployed.txt" ]; then
+            grep -F '[deployed] POST /api/chat' "$RUNNER_TEMP/deployed.txt" \
+              | while IFS= read -r line; do echo "::notice::$line"; done
+            grep -F '[deployed] health body:' "$RUNNER_TEMP/deployed.txt" \
+              | while IFS= read -r line; do echo "::notice::$line"; done
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-deployed
+          path: |
+            e2e/test-results
+          retention-days: 7
+          if-no-files-found: warn
