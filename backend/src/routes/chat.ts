@@ -3,23 +3,7 @@ import { z } from "zod";
 
 import { getReport } from "../db";
 import { chatAnswer } from "../geminiClient";
-import type { NpuStats } from "../types";
-
-function isNpuStats(value: unknown): value is NpuStats {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const stats = value as Record<string, unknown>;
-  return (
-    typeof stats.npu === "string" &&
-    typeof stats.incident_count_90d === "number" &&
-    typeof stats.incident_count_prior_90d === "number" &&
-    typeof stats.open_case_count === "number" &&
-    (typeof stats.median_resolution_days === "number" || stats.median_resolution_days === null) &&
-    typeof stats.counts_by_category === "object" &&
-    stats.counts_by_category !== null
-  );
-}
+import { isNpuStats } from "../types";
 
 const chatBodySchema = z.object({
   npu: z.string().min(1),
