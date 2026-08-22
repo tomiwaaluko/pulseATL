@@ -42,7 +42,7 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       BASE: https://pulse-atl.onrender.com
       SNOWFLAKE_MODE: ${{ inputs.snowflake || 'on' }}
@@ -78,27 +78,57 @@ jobs:
           # or {ok:false, error} with credentials already redacted server-side.
           echo "response: $(cat response.json)"
 
+          # An explicit {"ok":false} means the run already failed, so polling for
+          # a timestamp that can never move would just burn the whole window and
+          # then report a timeout instead of the actual cause.
+          if python3 -c "import json,sys;sys.exit(0 if json.load(open('response.json')).get('ok') is False else 1)" 2>/dev/null; then
+            echo "::error::ingest rejected the request: $(cat response.json)"
+            exit 1
+          fi
+
       - name: Confirm the cache actually advanced
         run: |
           # The endpoint answers 202 for runs over 20s, so a response alone does
           # not mean the ingest finished. Poll until last_ingest moves.
+          #
+          # The window is wall-clock rather than a fixed iteration count because
+          # each health probe can itself take up to 60s, so counting iterations
+          # makes the real deadline depend on how slow the service is that day.
+          #
+          # 15 minutes, not the 5 this used to allow: a full run makes ~25 Cortex
+          # completions plus ~25 Gemini generations, and that only became true
+          # once both models were unpinned from retired versions (#28, #30).
+          # While both LLM calls were failing fast the pipeline finished in under
+          # a minute, so the old window looked generous right up until the fixes
+          # landed and run 172 timed out at 5m07s on an ingest that was still
+          # working.
           before='${{ steps.before.outputs.before }}'
-          echo "waiting for last_ingest to move from: $before"
-          for _ in $(seq 1 30); do
+          started=$(date +%s)
+          deadline=$(( started + 900 ))
+          echo "waiting up to 15m for last_ingest to move from: $before"
+          health='{}'
+          while [ "$(date +%s)" -lt "$deadline" ]; do
             health=$(curl -s --max-time 60 "$BASE/api/health" || echo '{}')
             now=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('last_ingest') or 'none')" 2>/dev/null || echo 'none')
             rows=$(echo "$health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('row_count','?'))" 2>/dev/null || echo '?')
             if [ "$now" != "$before" ] && [ "$now" != "none" ]; then
-              echo "::notice::ingest completed at $now ($rows rows)"
+              elapsed=$(( $(date +%s) - started ))
+              echo "::notice::ingest completed at $now ($rows rows, ${elapsed}s)"
               {
                 echo "### Ingest complete"
+                echo ""
+                echo "Completed in ${elapsed}s."
                 echo '```json'
                 echo "$health"
                 echo '```'
               } >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            sleep 10
+            sleep 15
           done
-          echo "::error::last_ingest never advanced past $before"
+          elapsed=$(( $(date +%s) - started ))
+          # Report what was actually seen; a bare timeout hides whether the
+          # service was unreachable, empty, or merely slow.
+          echo "::error::last_ingest never advanced past $before after ${elapsed}s"
+          echo "last health payload: $health"
           exit 1
