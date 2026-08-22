@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, fetchNpuDetail, fetchNpus } from "./api";
+import ChatDrawer from "./components/ChatDrawer";
 import CompareView from "./components/CompareView";
 import PulseMap from "./components/PulseMap";
 import ReportPanel from "./components/ReportPanel";
@@ -59,6 +60,7 @@ export default function App(): JSX.Element {
   const [detailError, setDetailError] = useState<string | null>(null);
 
   const [compareOpen, setCompareOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const loadNpus = useCallback(async (): Promise<void> => {
     setListLoading(true);
@@ -90,6 +92,7 @@ export default function App(): JSX.Element {
     setDetailError(null);
     setDetail(null);
     setCompareOpen(false);
+    setChatOpen(false);
 
     fetchNpuDetail(selectedNpu)
       .then((data) => {
@@ -162,7 +165,7 @@ export default function App(): JSX.Element {
             loading={detailLoading}
             error={detailError}
             onCompare={() => setCompareOpen(true)}
-            onAsk={() => undefined}
+            onAsk={() => setChatOpen(true)}
           />
         </aside>
       </div>
@@ -173,6 +176,10 @@ export default function App(): JSX.Element {
           npus={npus}
           onClose={() => setCompareOpen(false)}
         />
+      ) : null}
+
+      {chatOpen && selectedNpu !== null ? (
+        <ChatDrawer npu={selectedNpu} onClose={() => setChatOpen(false)} />
       ) : null}
     </div>
   );
