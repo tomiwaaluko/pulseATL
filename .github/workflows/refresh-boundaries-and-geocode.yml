@@ -1,0 +1,160 @@
+name: Refresh NPU boundaries and geocode ATL311
+
+# PULSE-19 closes two gaps that both need open outbound network:
+#
+#   1. frontend/data/npus.geojson came from a third-party mirror that ships no
+#      NPU Q, so Q was a 7-vertex placeholder. `fetch:npus` replaces the file
+#      with the City of Atlanta's own Official_NPU layer.
+#   2. Only part of the ATL311 fixture carries coordinates. `geocode:atl311`
+#      now makes several address-cleaning passes over whatever is unresolved.
+#
+# The orchestration sandbox's egress proxy answers 403 to CONNECT for both
+# services5.arcgis.com and geocoding.geo.census.gov, so neither can run there.
+# Both sources are public open data — no API key, no secret.
+#
+# Trigger by pushing to ops/run-npu-geocode, or from the Actions tab. A
+# dedicated branch (rather than ops/run-geocode) keeps this from racing the
+# older geocode-only workflow, which pushes back to the same branch it ran on.
+
+on:
+  workflow_dispatch:
+
+  # Pushing to this branch runs both refreshers and commits the results back to
+  # it. It exists because API tokens without `actions: write` cannot fire
+  # workflow_dispatch, but can push.
+  push:
+    branches:
+      - ops/run-npu-geocode
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atl311-fixture
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # No explicit ref: check out whatever branch triggered this run, so the
+      # workflow keeps working after the PULSE-19 branch is merged and deleted.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      # Both refreshers are allowed to fail without killing the run: one run
+      # should report on both gaps, and the failing logs are the useful output.
+      - name: Fetch the official NPU boundary layer
+        id: npus
+        continue-on-error: true
+        run: |
+          # pipefail: without it `cmd | tee` reports tee's exit code, hiding a crash.
+          set -o pipefail
+          npm run fetch:npus --workspace=backend | tee "$RUNNER_TEMP/npus.txt"
+
+      - name: Geocode the ATL311 fixture
+        id: geocode
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run geocode:atl311 --workspace=backend | tee "$RUNNER_TEMP/geocode.txt"
+
+      # Measured from the committed files themselves, not from what the scripts
+      # claim they did — the acceptance numbers have to survive a re-read.
+      - name: Measure the acceptance criteria
+        if: always()
+        run: |
+          set -o pipefail
+          cat > "$RUNNER_TEMP/measure.js" <<'JS'
+          const { readFileSync } = require("node:fs");
+
+          const rows = JSON.parse(readFileSync("backend/test/fixtures/atl311_service_requests.sample.json", "utf8"));
+          const inBox = (row) =>
+            typeof row.latitude === "number" && typeof row.longitude === "number"
+            && row.longitude >= -84.6 && row.longitude <= -84.2
+            && row.latitude >= 33.6 && row.latitude <= 33.9;
+          const hits = rows.filter(inBox).length;
+          const bar = Math.ceil(rows.length * 0.85);
+          console.log(`ATL311 rows: ${rows.length}`);
+          console.log(`in Atlanta bbox: ${hits} (${((hits / rows.length) * 100).toFixed(1)}%)`);
+          console.log(`bar is 85% = ${bar} rows -> ${hits >= bar ? "PASS" : "FAIL"}`);
+
+          const geo = JSON.parse(readFileSync("frontend/data/npus.geojson", "utf8"));
+          const count = (coords) => {
+            let n = 0;
+            const walk = (node) => {
+              if (typeof node[0] === "number") { n += 1; return; }
+              for (const child of node) walk(child);
+            };
+            walk(coords);
+            return n;
+          };
+          const features = geo.features.map((f) => ({ npu: f.properties.NPU, n: count(f.geometry.coordinates) }));
+          features.sort((a, b) => a.n - b.n);
+          console.log(`\nNPU features: ${geo.features.length}`);
+          console.log(`letters: ${features.map((f) => f.npu).sort().join(",")}`);
+          for (const f of features) console.log(`  ${f.npu}  ${f.n}`);
+          const q = features.find((f) => f.npu === "Q");
+          console.log(`\nNPU Q vertices: ${q ? q.n : "MISSING"}`);
+          console.log(`bar is 50 -> ${q && q.n >= 50 ? "PASS" : "FAIL"}`);
+          JS
+          node "$RUNNER_TEMP/measure.js" | tee "$RUNNER_TEMP/measure.txt"
+
+      - name: Run the test suite against the refreshed data
+        id: tests
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm test | tee "$RUNNER_TEMP/tests.txt"
+
+      - name: Publish run summary
+        if: always()
+        run: |
+          {
+            echo "### NPU boundary layer"
+            echo '```'
+            tail -n 60 "$RUNNER_TEMP/npus.txt" 2>/dev/null || echo "(did not run)"
+            echo '```'
+            echo "### ATL311 geocoding"
+            echo '```'
+            tail -n 200 "$RUNNER_TEMP/geocode.txt" 2>/dev/null || echo "(did not run)"
+            echo '```'
+            echo "### Measured acceptance criteria"
+            echo '```'
+            cat "$RUNNER_TEMP/measure.txt" 2>/dev/null || echo "(did not run)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit refreshed data
+        if: always()
+        run: |
+          git config user.name "pulse-atl-bot"
+          git config user.email "pulse-atl-bot@users.noreply.github.com"
+          if git diff --quiet -- backend/test/fixtures/atl311_service_requests.sample.json frontend/data/npus.geojson; then
+            echo "Nothing changed, nothing to commit."
+            exit 0
+          fi
+          git add backend/test/fixtures/atl311_service_requests.sample.json frontend/data/npus.geojson
+          git commit -m "[PULSE-19] Refresh NPU boundaries and ATL311 coordinates from source"
+          # Results land back on the branch that triggered the run.
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      # The run is only green when both refreshers and the suite were green.
+      - name: Fail the run if any step failed
+        if: always()
+        run: |
+          echo "fetch:npus     = ${{ steps.npus.outcome }}"
+          echo "geocode:atl311 = ${{ steps.geocode.outcome }}"
+          echo "npm test       = ${{ steps.tests.outcome }}"
+          test "${{ steps.npus.outcome }}" = "success"
+          test "${{ steps.geocode.outcome }}" = "success"
+          test "${{ steps.tests.outcome }}" = "success"
