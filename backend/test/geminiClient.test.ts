@@ -12,6 +12,7 @@ import {
   draftLetter,
   generateReport,
 } from "../src/geminiClient.js";
+import type { PulseContext } from "../src/geminiClient.js";
 import type { NpuStats } from "../src/types.js";
 
 const stats: NpuStats = {
@@ -22,6 +23,9 @@ const stats: NpuStats = {
   median_resolution_days: 12,
   counts_by_category: { crime: 20, blight: 22 },
 };
+
+/** Matches the report row the chat route reads pulse_score and trend from. */
+const pulse: PulseContext = { pulse_score: 41.5, trend: "worsening" };
 
 describe("Gemini client", () => {
   beforeEach(() => {
@@ -59,6 +63,7 @@ describe("Gemini client", () => {
       "What changed?",
       [{ role: "user", content: "Tell me about this NPU." }],
       stats,
+      pulse,
     );
 
     expect(result).toContain("42 incidents");
@@ -68,6 +73,44 @@ describe("Gemini client", () => {
     expect(request.contents).toContain("Tell me about this NPU.");
     expect(request.contents).toContain("What changed?");
     expect(request.contents).toMatch(/refuse/i);
+  });
+
+  // PUL-20: a deployed run passed green while the chat replied "The provided
+  // data does not contain information about a 'pulse score'", because the score
+  // was never in the prompt. These pin the grounding that made that a refusal.
+  it("supplies the pulse score and trend, the number rendered beside the [Ask] button", async () => {
+    generateContent.mockResolvedValue({ text: "The score is 41.5." });
+
+    await chatAnswer("V", "Why is the score what it is?", [], stats, pulse);
+
+    const prompt = generateContent.mock.calls[0][0].contents;
+    expect(prompt).toContain("Pulse score for NPU V: 41.5 out of 100");
+    expect(prompt).toContain("Trend: worsening");
+  });
+
+  it("explains that the score is deterministic, not model-generated", async () => {
+    generateContent.mockResolvedValue({ text: "The score is 41.5." });
+
+    await chatAnswer("V", "How is that calculated?", [], stats, pulse);
+
+    const prompt = generateContent.mock.calls[0][0].contents;
+    expect(prompt).toMatch(/not produced by a language model/i);
+    // The real weights from computePulse, so the model relates the score to the
+    // aggregates instead of inventing a formula that merely sounds plausible.
+    expect(prompt).toContain("0.5 x z(incidents in the last 90 days)");
+    expect(prompt).toContain("0.3 x z(change from the prior 90 days)");
+    expect(prompt).toContain("0.2 x z(median days to resolve)");
+    expect(prompt).toContain("50 - 10 x that composite");
+  });
+
+  it("forbids recomputing the score rather than quoting the supplied one", async () => {
+    generateContent.mockResolvedValue({ text: "The score is 41.5." });
+
+    await chatAnswer("V", "Recalculate it for me.", [], stats, pulse);
+
+    expect(generateContent.mock.calls[0][0].contents).toMatch(
+      /never recompute or re-derive the pulse score/i,
+    );
   });
 
   it("fails clearly when Gemini returns no text", async () => {

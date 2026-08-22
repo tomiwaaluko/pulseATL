@@ -40,7 +40,13 @@ chatRouter.post("/", async (req, res, next) => {
       return;
     }
 
-    const answer = await chatAnswer(report.npu, question, history, report.stats_json);
+    // pulse_score and trend live on the report row, not inside stats_json, so
+    // they have to be handed over explicitly or the chat cannot discuss the
+    // number rendered next to the button that opens it.
+    const answer = await chatAnswer(report.npu, question, history, report.stats_json, {
+      pulse_score: report.pulse_score,
+      trend: report.trend,
+    });
     res.status(200).json({ answer, npu: report.npu });
   } catch (err) {
     next(err);
