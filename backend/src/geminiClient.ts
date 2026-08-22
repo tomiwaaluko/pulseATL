@@ -91,6 +91,9 @@ ${question}`;
  */
 export const LETTER_FALLBACK_PREFIX = "[letter-unavailable]";
 
+/** A letter that cannot cite this many real figures is not worth drafting. */
+const MIN_CITED_FIGURES = 3;
+
 /**
  * The only numbers the letter is allowed to contain, rendered as labelled
  * lines rather than raw JSON so the model cannot mistake a key it half-recalls
@@ -135,12 +138,20 @@ export function verifiedFigures(stats: NpuStats): string[] {
  */
 export async function draftLetter(npu: string, stats: NpuStats, reportMd: string): Promise<string> {
   const figures = verifiedFigures(stats);
-  const prompt = `You draft a short, respectful advocacy letter that a resident of Atlanta NPU ${npu} will send to their city council representative.
+  // `isNpuStats` guarantees three numeric counts, so this only trips on values
+  // that are numbers but not finite (a NaN that survived aggregation). Asking
+  // for three citations that do not exist is exactly how a letter acquires an
+  // invented statistic, so refuse to draft one at all.
+  if (figures.length < MIN_CITED_FIGURES) {
+    return `${LETTER_FALLBACK_PREFIX} NPU ${npu} has fewer than ${MIN_CITED_FIGURES} usable statistics cached, so no letter was drafted. This is a failure notice, not a draft — do not send it.`;
+  }
+
+  const prompt =`You draft a short, respectful advocacy letter that a resident of Atlanta NPU ${npu} will send to their city council representative.
 
 Grounding rules — follow them exactly:
 Use ONLY the verified figures listed below. Do not estimate, do not extrapolate, do not round, and do not introduce any statistic, percentage, ranking, or dollar amount that is not in that list.
 If something is not in the list, leave it out of the letter entirely. Never guess a missing number, never write a placeholder number, and never describe a number as approximate to cover a gap.
-Cite at least three of the verified figures, each with the label it is given below.
+Cite at least ${MIN_CITED_FIGURES} of the verified figures, each with the label it is given below.
 The pulse score is NOT a verified figure and is not supplied to you: never state, quote, or characterise a pulse score, rank, or grade for this NPU, even if one appears in the report card below.
 Do not invent names, titles, districts, addresses, phone numbers, dates, meetings, incidents, or events. Address the recipient as "Dear Council Member" and sign off as "A resident of NPU ${npu}".
 If the verified figures do not support a point you want to make, say plainly that the available data does not show it rather than filling the gap.

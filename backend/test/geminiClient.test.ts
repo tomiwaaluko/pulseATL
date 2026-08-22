@@ -128,7 +128,7 @@ describe("council letter drafting", () => {
     expect(prompt).toMatch(/use only the verified figures/i);
     expect(prompt).toMatch(/do not estimate/i);
     expect(prompt).toMatch(/never guess a missing number/i);
-    expect(prompt).toMatch(/cite at least three of the verified figures/i);
+    expect(prompt).toMatch(/cite at least 3 of the verified figures/i);
     expect(prompt).toMatch(/do not invent names/i);
   });
 
@@ -173,6 +173,27 @@ describe("council letter drafting", () => {
     expect(result).toMatch(/could not draft/i);
     expect(result).toMatch(/not a draft/i);
     expect(result).not.toContain("Dear Council Member");
+  });
+
+  it("refuses to draft at all when fewer than three figures are usable", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    const result = await draftLetter(
+      "V",
+      {
+        ...stats,
+        incident_count_prior_90d: Number.NaN,
+        open_case_count: Number.NaN,
+        median_resolution_days: null,
+        counts_by_category: {},
+      },
+      REPORT_MD,
+    );
+
+    expect(result.startsWith(LETTER_FALLBACK_PREFIX)).toBe(true);
+    expect(result).toMatch(/fewer than 3 usable statistics/i);
+    // Never ask the model for three citations that do not exist.
+    expect(generateContent).not.toHaveBeenCalled();
   });
 
   it("returns the unavailable marker when Gemini returns no text", async () => {
