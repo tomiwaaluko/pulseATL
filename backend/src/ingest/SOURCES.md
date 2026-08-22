@@ -86,17 +86,64 @@ required.
   already reads for the `atl311` source. It is idempotent: a row that already
   has numeric `latitude`/`longitude` is left untouched on a re-run, and only
   rows still `null` (or missing the fields) are retried.
-- Run it locally with `npm run geocode:atl311 --workspace=backend`, or via the
-  `Geocode ATL311 fixture` GitHub Actions workflow
-  (`.github/workflows/geocode.yml`), which commits the updated fixture back to
-  `ticket/PULSE-19-geocode-workflow`.
-- **Coverage (first real run)**: 128/250 rows geocoded (51.2%) — 26 Census
-  no-matches, 32 matches outside the Atlanta bbox, 0 unparseable responses, and
-  64 rows with no usable address at all. 118/250 rows (47.2%) normalize into a
-  real NPU; the shortfall from 128 isn't a bug — `City/County` on 38 of the 250
-  rows names another Fulton County city (College Park, Sandy Springs, Fairburn,
-  Union City, East Point) that sits entirely outside every Atlanta NPU polygon,
-  so those rows correctly reject at the NPU join even when Census geocodes them.
+- The sandbox's egress proxy answers **403 to CONNECT for
+  `geocoding.geo.census.gov`**, so the script cannot run there at all. Run it
+  locally with `npm run geocode:atl311 --workspace=backend`, or on a
+  GitHub-hosted runner via the `Refresh NPU boundaries and geocode ATL311`
+  workflow (`.github/workflows/refresh-boundaries-and-geocode.yml`, triggered by
+  pushing to `ops/run-npu-geocode`), which commits the updated fixture back to
+  the branch it ran on. The older `Geocode ATL311 fixture` workflow
+  (`.github/workflows/geocode.yml`, branch `ops/run-geocode`) still works and
+  runs the geocoder alone.
+
+### Address cleaning and retry passes
+
+A single query per row left 185/250 rows geocoded. Reading the failures back
+showed three repeatable, fixable causes, so `geocode-atl311.ts` now makes
+several passes, each retrying only what the earlier passes left unresolved.
+The rewrites are built by `buildAtl311AddressVariants` in `geocode.ts`:
+
+| Pass | Rewrite |
+| --- | --- |
+| `base` | the address exactly as `buildAtl311Address` builds it |
+| `cleaned` | trailing unit designators removed (`APT 3`, `STE 200`, `#4B`, stacked), an intersection tail after `/`, `&` or `AND` dropped, and contractions expanded to the spelling the Census gazetteer stores (`R D ABERNATHY` → `RALPH DAVID ABERNATHY`, `FOREST PK RD` → `FOREST PARK RD`, `ST DAVID` → `SAINT DAVID`) |
+| `zip_only` | cleaned street + ZIP, city dropped — the export's city column is often the billing city, not the service address's |
+| `city_only` | cleaned street + city, ZIP dropped — the mirror-image error |
+| `quadrant` | cleaned street with each of `NE`/`NW`/`SE`/`SW` appended |
+
+Atlanta reuses the same house number and street name across all four quadrants,
+so a quadrant retry is a question, not an answer. `resolveQuadrantCandidates`
+accepts a coordinate **only when exactly one** quadrant comes back as a match.
+Two matches means two real Atlanta addresses fit the row, and picking one would
+be a guess dressed up as data — the row stays `null`. Four rows in the current
+fixture hit that case (`513 EDGEWOOD AVE`, `77 STAFFORD ST`, `230 HOWARD ST`,
+`188 PIEDMONT AVE`) and are deliberately left unresolved.
+
+- **Coverage — before**: 185/250 rows (74.0%) carried a coordinate inside the
+  Atlanta bbox.
+- **Coverage — after** (run 2026-08-22, GitHub-hosted runner): **187/250
+  (74.8%)**. The `cleaned` pass resolved 2 rows; `zip_only`, `city_only` and
+  `quadrant` resolved none.
+- **This is below the 85% (213-row) target, and the target is not reachable on
+  this fixture without fabricating coordinates.** Of the 63 rows still `null`,
+  45 are `out_of_bounds`: the Census matched the address exactly, and the
+  coordinate it returned falls outside the Atlanta bbox because the address is
+  genuinely in Sandy Springs (30328/30350), Dunwoody (30338), Fairburn (30213),
+  Union City (30291), Palmetto/Chattahoochee Hills (30268), Riverdale (30296),
+  south Fulton below 33.6°N (30349), or — in one case — Sumter, **South
+  Carolina** (29154). Those are correct rejections, not failures to fix.
+  The remaining 18 are `no_match`: 3 carry no house number at all
+  (`REDFORD DR`, `BOOKER AVE`, `JONESBORO RD`), 4 are the quadrant-ambiguous
+  rows above, and the rest are addresses current TIGER address ranges do not
+  carry. Even if every one of those 18 resolved inside the bbox, the ceiling
+  would be 205/250 = 82.0%.
+- Raising coverage further needs a different **fixture** (resampling with a
+  city-limits filter), not a different geocoder. That is a separate change from
+  PULSE-19 and would alter the sampling contract `resample-atl311.ts`
+  documents, so it is not done here.
+- Every coordinate in the fixture was returned by the Census for that row's own
+  address. None is copied from another row, approximated from a ZIP or city
+  centroid, or inferred in any other way.
 
 ## NPU boundary layer
 

@@ -125,6 +125,8 @@ async function tryFetchJson(url: string, retries = 0): Promise<Record<string, un
 interface LayerCandidate {
   queryUrl: string;
   label: string;
+  /** Sort key: how canonical the publishing service's name looks. */
+  rank: number;
 }
 
 /**
@@ -159,11 +161,25 @@ async function discoverLayers(): Promise<LayerCandidate[]> {
         candidates.push({
           queryUrl: `${serviceUrl}/${layer.id}/query`,
           label: `${service}/FeatureServer/${layer.id} (${String(layer.name ?? "?")})`,
+          rank: rankService(service),
         });
       }
     }
   }
-  return candidates;
+  // Plain boundary publications first. Several derived products (climate
+  // hazard scores, for instance) republish the same NPU outlines with extra
+  // attributes; their geometry may be identical, but the canonical layer is
+  // the one to cite, so it gets first refusal.
+  return candidates.sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label));
+}
+
+/** Lower is more canonical: an exact `Official_NPU` beats `NPU_climate_hazards`. */
+function rankService(name: string): number {
+  const normalized = name.toLowerCase();
+  if (normalized === "official_npu") return 0;
+  if (normalized.startsWith("official_npu")) return 1;
+  if (/^npu(_|$)/.test(normalized)) return 2;
+  return 3;
 }
 
 /** Shoelace signed area. Esri marks outer rings clockwise (negative here) and holes the other way. */
@@ -334,7 +350,8 @@ async function main(): Promise<void> {
         writeFileSync(OUTPUT_PATH, `${json}\n`);
 
         console.log("\n=== NPU boundary layer ===");
-        console.log(`source:   ${url}`);
+        console.log(`source: ${url}`);
+        console.log(`layer: ${candidate.label}`);
         console.log(`features: ${collection.features.length}`);
         console.log(`wrote:    ${OUTPUT_PATH} (${(json.length / 1024).toFixed(0)} KiB)`);
         console.log("vertices per NPU:");

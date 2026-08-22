@@ -148,6 +148,16 @@ jobs:
           # Results land back on the branch that triggered the run.
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
+      # Repeated at the end of the job on purpose: by now the fetch step's own
+      # output is thousands of log lines up, and the provenance of the boundary
+      # layer is the one line a reviewer has to be able to find.
+      - name: Report what the boundary layer came from
+        if: always()
+        run: |
+          grep -E '^(source|layer|features|NPU Q vertex count):' "$RUNNER_TEMP/npus.txt" \
+            || echo "(fetch:npus produced no provenance line)"
+          cat "$RUNNER_TEMP/measure.txt" 2>/dev/null || echo "(no measurement)"
+
       # The run is only green when both refreshers and the suite were green.
       - name: Fail the run if any step failed
         if: always()
