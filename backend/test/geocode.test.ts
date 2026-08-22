@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ATLANTA_QUADRANTS,
   buildAddressBatchCsv,
   buildAddressCsvLine,
   buildAtl311Address,
+  buildAtl311AddressVariants,
+  cleanStreetLine,
   escapeCsvField,
+  hasHouseNumber,
   isWithinAtlantaBounds,
   parseCensusBatchResponse,
+  resolveQuadrantCandidates,
 } from "../src/ingest/geocode.js";
 
 describe("buildAtl311Address", () => {
@@ -139,5 +144,126 @@ describe("parseCensusBatchResponse", () => {
     expect(results).toHaveLength(2);
     expect(results[0].matched).toBe(true);
     expect(results[1].matched).toBe(false);
+  });
+});
+
+describe("cleanStreetLine", () => {
+  it("leaves an already-clean street untouched", () => {
+    expect(cleanStreetLine("6745 CEDAR HURST TRL")).toBe("6745 CEDAR HURST TRL");
+  });
+
+  it("strips a trailing unit designator and a bare unit number", () => {
+    expect(cleanStreetLine("100 MAIN ST APT 3")).toBe("100 MAIN ST");
+    expect(cleanStreetLine("100 MAIN ST, STE 200")).toBe("100 MAIN ST");
+    expect(cleanStreetLine("100 MAIN ST #4B")).toBe("100 MAIN ST");
+  });
+
+  it("strips stacked unit designators", () => {
+    expect(cleanStreetLine("100 MAIN ST BLDG C APT 3")).toBe("100 MAIN ST");
+  });
+
+  it("expands contracted street names the Census stores in full", () => {
+    expect(cleanStreetLine("1550 R D ABERNATHY BLVD")).toBe("1550 RALPH DAVID ABERNATHY BLVD");
+    expect(cleanStreetLine("3765 FOREST PK RD")).toBe("3765 FOREST PARK RD");
+    expect(cleanStreetLine("7491 ST DAVID ST")).toBe("7491 SAINT DAVID ST");
+  });
+
+  it("does not turn a trailing ST street type into SAINT", () => {
+    expect(cleanStreetLine("77 STAFFORD ST")).toBe("77 STAFFORD ST");
+  });
+
+  it("keeps only the first street of an intersection", () => {
+    expect(cleanStreetLine("MAIN ST / 5TH AVE")).toBe("MAIN ST");
+    expect(cleanStreetLine("MAIN ST & 5TH AVE")).toBe("MAIN ST");
+  });
+});
+
+describe("hasHouseNumber", () => {
+  it("is true for a numbered street and false for a bare street name", () => {
+    expect(hasHouseNumber("100 MAIN ST")).toBe(true);
+    expect(hasHouseNumber("REDFORD DR")).toBe(false);
+  });
+});
+
+describe("buildAtl311AddressVariants", () => {
+  const row = {
+    "Street #": "1550",
+    "Street Name": "R D ABERNATHY",
+    "Street Type": "BLVD",
+    "City/County": "ATLANTA",
+    "Postal Code": "30310",
+  };
+
+  it("puts the untouched address first", () => {
+    const [first] = buildAtl311AddressVariants(row);
+    expect(first).toEqual({
+      kind: "base",
+      quadrant: null,
+      address: { street: "1550 R D ABERNATHY BLVD", city: "ATLANTA", state: "GA", zip: "30310" },
+    });
+  });
+
+  it("adds a cleaned rewrite, a ZIP-only and a city-only retry", () => {
+    const variants = buildAtl311AddressVariants(row);
+    expect(variants.find((variant) => variant.kind === "cleaned")?.address).toEqual({
+      street: "1550 RALPH DAVID ABERNATHY BLVD", city: "ATLANTA", state: "GA", zip: "30310",
+    });
+    expect(variants.find((variant) => variant.kind === "zip_only")?.address).toEqual({
+      street: "1550 RALPH DAVID ABERNATHY BLVD", city: "", state: "GA", zip: "30310",
+    });
+    expect(variants.find((variant) => variant.kind === "city_only")?.address).toEqual({
+      street: "1550 RALPH DAVID ABERNATHY BLVD", city: "ATLANTA", state: "GA", zip: "",
+    });
+  });
+
+  it("adds one quadrant retry per Atlanta quadrant", () => {
+    const quadrants = buildAtl311AddressVariants(row)
+      .filter((variant) => variant.kind === "quadrant")
+      .map((variant) => variant.quadrant);
+    expect(quadrants).toEqual([...ATLANTA_QUADRANTS]);
+  });
+
+  it("does not send the same address twice when cleaning changes nothing", () => {
+    const variants = buildAtl311AddressVariants({ ...row, "Street Name": "STAFFORD" });
+    const rendered = variants.map((variant) => JSON.stringify(variant.address));
+    expect(new Set(rendered).size).toBe(rendered.length);
+    expect(variants.some((variant) => variant.kind === "cleaned")).toBe(false);
+  });
+
+  it("skips quadrant retries for a street with no house number", () => {
+    const variants = buildAtl311AddressVariants({ ...row, "Street #": "" });
+    expect(variants.some((variant) => variant.kind === "quadrant")).toBe(false);
+  });
+
+  it("skips quadrant retries when the street already names a quadrant", () => {
+    const variants = buildAtl311AddressVariants({ ...row, "Street Type": "BLVD SW" });
+    expect(variants.some((variant) => variant.kind === "quadrant")).toBe(false);
+  });
+
+  it("returns nothing for a row with no geocodable address", () => {
+    expect(buildAtl311AddressVariants({ "City/County": "ATLANTA" })).toEqual([]);
+  });
+});
+
+describe("resolveQuadrantCandidates", () => {
+  const matched = (id: string, lon: number, lat: number) =>
+    ({ id, matched: true, lon, lat, outcome: "match" }) as const;
+  const missed = (id: string) =>
+    ({ id, matched: false, lon: null, lat: null, outcome: "no_match" }) as const;
+
+  it("accepts the coordinate when exactly one quadrant matches", () => {
+    expect(resolveQuadrantCandidates([missed("a~NE"), matched("a~SW", -84.42, 33.73), missed("a~SE")]))
+      .toEqual({ lon: -84.42, lat: 33.73 });
+  });
+
+  it("refuses to choose when two quadrants match", () => {
+    expect(resolveQuadrantCandidates([
+      matched("a~NE", -84.38, 33.78),
+      matched("a~SW", -84.42, 33.73),
+    ])).toBeNull();
+  });
+
+  it("returns null when no quadrant matches", () => {
+    expect(resolveQuadrantCandidates([missed("a~NE"), missed("a~SW")])).toBeNull();
   });
 });
