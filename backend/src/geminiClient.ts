@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 import { describeError } from "./redact.js";
-import type { ChatTurn, NpuStats } from "./types.js";
+import type { ChatTurn, NpuStats, Trend } from "./types.js";
 
 /**
  * Default model. `gemini-2.0-flash` — the original choice — has since been
@@ -62,14 +62,43 @@ ${cortexFindings}`;
   return capWords(await generate(prompt), MAX_REPORT_WORDS);
 }
 
+/**
+ * The score and trend shown beside the [Ask] button. Passed separately from
+ * `stats` because they are not part of the cached `stats_json` blob — the chat
+ * was previously given only the aggregates, so the largest number on the panel
+ * was the one thing it could not answer about (PUL-20).
+ */
+export interface PulseContext {
+  pulse_score: number;
+  trend: Trend;
+}
+
+/**
+ * How `computePulse` actually derives the score, stated for the model so it can
+ * relate the number to the aggregates it is given rather than inventing a
+ * formula that sounds plausible. Kept in step with `backend/src/pulse.ts`: any
+ * change to the weights or the mapping belongs here in the same commit.
+ */
+const PULSE_DERIVATION = `The pulse score is NOT produced by a language model. It is computed in TypeScript by a fixed, deterministic formula over all 25 NPUs:
+- a risk composite is formed as 0.5 x z(incidents in the last 90 days) + 0.3 x z(change from the prior 90 days) + 0.2 x z(median days to resolve), where each z is that NPU's standard deviations from the 25-NPU mean;
+- the score is then 50 - 10 x that composite, clamped to 0-100 and rounded to one decimal.
+So 50 is the city average, higher is healthier, and roughly 10 points is one standard deviation. The trend label is separate: it compares the last 90 days with the prior 90 and reads "improving" below -10%, "worsening" above +10%, and "stable" between.`;
+
 export async function chatAnswer(
   npu: string,
   question: string,
   history: ChatTurn[],
   stats: NpuStats,
+  pulse: PulseContext,
 ): Promise<string> {
   const prompt = `You answer resident questions about Atlanta NPU ${npu}.
-Answer only from the supplied statistics. Do not speculate or use outside knowledge. If the data does not support an answer, refuse briefly and explain what information is missing. Never invent causes, locations, contacts, or recommendations.
+Answer only from the supplied statistics and pulse score. Do not speculate or use outside knowledge. If the data does not support an answer, refuse briefly and explain what information is missing. Never invent causes, locations, contacts, or recommendations.
+Do not state any figure that is not supplied below, and never recompute or re-derive the pulse score yourself — quote the supplied value.
+
+Pulse score for NPU ${npu}: ${pulse.pulse_score} out of 100. Trend: ${pulse.trend}.
+
+How that score is derived:
+${PULSE_DERIVATION}
 
 Statistics JSON:
 ${JSON.stringify(stats)}

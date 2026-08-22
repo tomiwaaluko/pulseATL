@@ -165,7 +165,11 @@ describe("POST /api/chat", () => {
   };
 
   it("returns a complete answer for a known npu", async () => {
-    getReport.mockResolvedValue(makeReport({ stats_json: validStats }));
+    // pulse_score/trend deliberately differ from makeReport's defaults so this
+    // asserts the route forwards the row's own values, not a constant.
+    getReport.mockResolvedValue(
+      makeReport({ stats_json: validStats, pulse_score: 42.5, trend: "stable" }),
+    );
     chatAnswer.mockResolvedValue("Crime is down 10% over the last 90 days.");
 
     const res = await request(createApp())
@@ -174,7 +178,13 @@ describe("POST /api/chat", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ answer: "Crime is down 10% over the last 90 days.", npu: "V" });
-    expect(chatAnswer).toHaveBeenCalledWith("V", "How is crime trending?", [], validStats);
+    // The route must forward pulse_score and trend from the report row: they are
+    // not inside stats_json, so omitting them is what left the chat unable to
+    // discuss the score at all (PUL-20).
+    expect(chatAnswer).toHaveBeenCalledWith("V", "How is crime trending?", [], validStats, {
+      pulse_score: 42.5,
+      trend: "stable",
+    });
   });
 
   it("returns 404 for an unknown npu without calling gemini", async () => {
