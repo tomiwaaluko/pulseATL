@@ -148,18 +148,59 @@ fixture hit that case (`513 EDGEWOOD AVE`, `77 STAFFORD ST`, `230 HOWARD ST`,
 ## NPU boundary layer
 
 - Publisher/catalog: [City of Atlanta Department of City Planning Open Data
-  Hub](https://dpcd-coaplangis.opendata.arcgis.com/)
-- ArcGIS REST query form used by fetchers (GeoJSON output):
-  `<layer-query-url>?where=1%3D1&outFields=*&outSR=4326&f=geojson`
-- Reproducible snapshot used for the committed file:
-  <https://raw.githubusercontent.com/andrewvora/mynpu/master/app/src/main/res/raw/npus.geojson>
+  Hub](https://dpcd-coaplangis.opendata.arcgis.com/) (`coaplangis`), item
+  [Official NPU](https://dpcd-coaplangis.opendata.arcgis.com/datasets/official-npu-open-data)
+- **Exact query the committed file came from** (fetched 2026-08-22 from a
+  GitHub-hosted runner):
+  <https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/Official_NPU___Open_Data/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&returnGeometry=true&f=geojson>
+- Fetcher: `backend/scripts/fetch-npus.ts`
+  (`npm run fetch:npus --workspace=backend`)
 - Output: `frontend/data/npus.geojson`, a WGS84 FeatureCollection containing 25
   polygon features with a unique uppercase `NPU` property (A–Z, excluding U).
 
-The archived snapshot lacked NPU Q, so its missing feature was restored before
-commit. The ingest contract depends only on WGS84 polygon geometry and the
-`NPU` property; source-only fields such as `AREA` and `ATL_NPU_ID` are retained
-for provenance.
+### Why the file was replaced (PULSE-19)
+
+The previous file was cut from a third-party GitHub mirror
+(<https://raw.githubusercontent.com/andrewvora/mynpu/master/app/src/main/res/raw/npus.geojson>).
+That mirror ships **24** features — NPU Q is absent from it entirely — and the
+Q feature in the repo was a **7-vertex** stand-in added to make the count 25.
+Seven points is not a boundary: every point-in-polygon join against it was
+wrong, both for the ingest NPU assignment and for the map. The same 24-feature
+defect is in every copy of that ancestor file on GitHub
+(`atlregional/aris`, `CivicTechAtlanta/Vote-Local`), so no mirror could fix it.
+
+| | Before (mirror) | After (`Official_NPU___Open_Data`) |
+| --- | --- | --- |
+| Features | 25 (24 real + 1 placeholder) | 25 |
+| **NPU Q vertices** | **7** | **403** |
+| Smallest NPU, by vertices | Q at 7 | Y at 134 |
+| Total vertices | 6,459 | 9,977 |
+| File size | 250 KiB | 366 KiB |
+
+`fetch-npus.ts` does not hardcode a query URL. It lists each candidate ArcGIS
+Online organisation's feature services, keeps the NPU-looking ones, ranks them
+so a canonical `Official_NPU*` publication beats a derived product that merely
+republishes the same outlines (a climate-hazard layer in the same org does),
+and tries each until one passes validation. This matters: the service is
+actually named `Official_NPU___Open_Data`, and a hardcoded `Official_NPU`
+URL returned a bare `Bad Request` with nothing to diagnose from.
+
+Nothing is written unless the response satisfies all of: 25 features, the exact
+letter set A–Z minus U, no duplicate letters, Polygon/MultiPolygon geometry,
+every coordinate inside a metro-Atlanta envelope (which also catches a layer
+served in Web Mercator instead of WGS84), and at least 50 vertices per NPU — a
+floor the old placeholder Q could not have cleared. A service that answers only
+Esri JSON is converted using ring winding to tell outer rings from holes.
+
+The ingest contract depends only on WGS84 polygon geometry and the `NPU`
+property (`buildNpuIndex` in `normalize.ts`, `PulseMap.tsx` on the frontend);
+the layer's own fields (`ACRES`, `SQMILES`, `GLOBALID`, `SHAPE_Area`,
+`SHAPE_Leng`) are retained for provenance.
+
+Like the geocoder, this cannot run in the orchestration sandbox: its egress
+proxy answers **403 to CONNECT for `*.arcgis.com`**. Run it from a GitHub-hosted
+runner via `.github/workflows/refresh-boundaries-and-geocode.yml` (push to
+`ops/run-npu-geocode`).
 
 ## Portals evaluated but not selected
 
