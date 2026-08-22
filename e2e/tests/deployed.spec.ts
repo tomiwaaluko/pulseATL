@@ -29,7 +29,16 @@ const REPORT_PLACEHOLDER_MARKERS = [
   "[cortex-unavailable]",
 ];
 
-const CHAT_QUESTION = "What is driving this neighborhood's pulse score right now?";
+/**
+ * Asked of the numbers `chatAnswer` is actually given. The prompt in
+ * `backend/src/geminiClient.ts` supplies only `NpuStats` — incident counts,
+ * open cases, median resolution days, category counts — and instructs the model
+ * to refuse anything the statistics do not support. `pulse_score` is not in
+ * that payload, so asking what drives the score earns a correct refusal and
+ * measures nothing.
+ */
+const CHAT_QUESTION =
+  "How many incidents were reported in the last 90 days, and how does that compare with the prior 90 days?";
 
 interface HealthBody {
   ok: boolean;
@@ -190,6 +199,15 @@ test("POST /api/chat answers a grounded question", async ({ request }) => {
   const list = (await listRes.json()) as { npus: NpuSummaryBody[] };
   const target = list.npus[0].npu;
 
+  // Read the same aggregate the chat prompt is built from, so the answer can be
+  // checked against a value the deployment actually holds.
+  const detailRes = await request.get(`/api/npus/${target}`, { timeout: 180_000 });
+  expect(detailRes.status()).toBe(200);
+  const detail = (await detailRes.json()) as NpuDetailBody;
+  const stats = detail.stats as { incident_count_90d?: number } | null;
+  const incidents90d = stats?.incident_count_90d;
+  expect(typeof incidents90d).toBe("number");
+
   const started = Date.now();
   const res = await request.post("/api/chat", {
     data: { npu: target, question: CHAT_QUESTION },
@@ -221,4 +239,13 @@ test("POST /api/chat answers a grounded question", async ({ request }) => {
       `chat answer for NPU ${target} contains the placeholder marker ${marker}`,
     ).not.toContain(marker);
   }
+
+  // A refusal ("the data does not support that") is also a 200 with prose in
+  // it, so the only way to tell an answer from a non-answer is to require the
+  // figure the prompt was given back in the reply.
+  expect(
+    body.answer,
+    `chat answer for NPU ${target} never cites incident_count_90d=${String(incidents90d)}, `
+      + "so it is prose but not a grounded answer",
+  ).toContain(String(incidents90d));
 });
