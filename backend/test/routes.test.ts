@@ -13,10 +13,12 @@ vi.mock("../src/db", () => ({
 
 const chatAnswer = vi.fn();
 const generateReport = vi.fn();
+const draftLetter = vi.fn();
 
 vi.mock("../src/geminiClient", () => ({
   chatAnswer: (...args: unknown[]) => chatAnswer(...args),
   generateReport: (...args: unknown[]) => generateReport(...args),
+  draftLetter: (...args: unknown[]) => draftLetter(...args),
 }));
 
 import { createApp } from "../src/server";
@@ -41,6 +43,7 @@ beforeEach(() => {
   initSchema.mockReset();
   chatAnswer.mockReset();
   generateReport.mockReset();
+  draftLetter.mockReset();
 });
 
 describe("GET /api/npus", () => {
@@ -218,6 +221,69 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ detail: "cached stats are malformed" });
     expect(chatAnswer).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/letter", () => {
+  const validStats = {
+    npu: "V",
+    incident_count_90d: 10,
+    incident_count_prior_90d: 8,
+    open_case_count: 3,
+    median_resolution_days: 50,
+    counts_by_category: { crime: 6, infrastructure: 4 },
+  };
+
+  it("returns a complete draft for a known npu, grounded in the cached stats", async () => {
+    getReport.mockResolvedValue(makeReport({ stats_json: validStats }));
+    draftLetter.mockResolvedValue("Dear Council Member, NPU V recorded 10 incidents…");
+
+    const res = await request(createApp()).post("/api/letter").send({ npu: "V" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      letter: "Dear Council Member, NPU V recorded 10 incidents…",
+      npu: "V",
+    });
+    expect(draftLetter).toHaveBeenCalledWith("V", validStats, "# NPU V");
+  });
+
+  it("returns 404 for an unknown npu without calling gemini", async () => {
+    getReport.mockResolvedValue(null);
+
+    const res = await request(createApp()).post("/api/letter").send({ npu: "ZZ" });
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ detail: "unknown npu" });
+    expect(draftLetter).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when npu is missing", async () => {
+    const res = await request(createApp()).post("/api/letter").send({});
+
+    expect(res.status).toBe(400);
+    expect(getReport).not.toHaveBeenCalled();
+    expect(draftLetter).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 JSON rather than drafting from malformed cached stats", async () => {
+    getReport.mockResolvedValue(makeReport({ stats_json: { median_resolution_days: 50 } }));
+
+    const res = await request(createApp()).post("/api/letter").send({ npu: "V" });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ detail: "cached stats are malformed" });
+    expect(draftLetter).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 JSON when the cached stats are null", async () => {
+    getReport.mockResolvedValue(makeReport({ stats_json: null }));
+
+    const res = await request(createApp()).post("/api/letter").send({ npu: "V" });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ detail: "cached stats are malformed" });
+    expect(draftLetter).not.toHaveBeenCalled();
   });
 });
 

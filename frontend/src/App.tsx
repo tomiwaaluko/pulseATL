@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiError, fetchNpuDetail, fetchNpus } from "./api";
 import ChatDrawer from "./components/ChatDrawer";
 import CompareView from "./components/CompareView";
+import LetterModal from "./components/LetterModal";
 import PulseMap from "./components/PulseMap";
 import ReportPanel from "./components/ReportPanel";
 import type { NpuDetail, NpuSummary } from "./types";
@@ -61,6 +62,7 @@ export default function App(): JSX.Element {
 
   const [compareOpen, setCompareOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [letterOpen, setLetterOpen] = useState(false);
 
   const loadNpus = useCallback(async (): Promise<void> => {
     setListLoading(true);
@@ -93,6 +95,7 @@ export default function App(): JSX.Element {
     setDetail(null);
     setCompareOpen(false);
     setChatOpen(false);
+    setLetterOpen(false);
 
     fetchNpuDetail(selectedNpu)
       .then((data) => {
@@ -166,6 +169,7 @@ export default function App(): JSX.Element {
             error={detailError}
             onCompare={() => setCompareOpen(true)}
             onAsk={() => setChatOpen(true)}
+            onLetter={() => setLetterOpen(true)}
           />
         </aside>
       </div>
@@ -180,6 +184,10 @@ export default function App(): JSX.Element {
 
       {chatOpen && selectedNpu !== null ? (
         <ChatDrawer npu={selectedNpu} onClose={() => setChatOpen(false)} />
+      ) : null}
+
+      {letterOpen && selectedNpu !== null ? (
+        <LetterModal npu={selectedNpu} onClose={() => setLetterOpen(false)} />
       ) : null}
     </div>
   );

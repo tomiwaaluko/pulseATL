@@ -137,10 +137,17 @@ GET /api/compare?a=V&b=B
 POST /api/chat  {"npu":"V","question":"...","history":[{"role":"user","content":"..."}]}
 → 200 {"answer":"...","npu":"V"}       # streaming NOT required — return complete
 
+POST /api/letter  {"npu":"V"}
+→ 200 {"letter":"...","npu":"V"}       # council advocacy draft; complete, not streamed
+→ 404 {"detail":"unknown npu"}
+→ 500 {"detail":"cached stats are malformed"}
+
 GET /api/health → 200 {"ok":true,"last_ingest":"...","row_count":12345}
 ```
 
 `frontend/src/types.ts` mirrors these shapes exactly; any change requires updating both files in the same PR.
+
+`POST /api/letter` was **added** after the freeze by ticket PUL-17 (council advocacy letter button); no route above it changed. It drafts a letter to a city council member from one NPU's cached `stats_json`, and is additive because the letter needs a prompt the chat endpoint does not carry: only the statistics actually present in the cache are put in front of the model, and it is told those are the only numbers it may use. A missing field is omitted rather than estimated, the pulse score is never supplied or quoted, and a Gemini failure returns `letter` prefixed with `[letter-unavailable]` — the same "say it failed" marker convention as `[report pending]` and `[cortex-unavailable]` — instead of a fabricated draft, since this is the one artifact a resident may actually send to a real official.
 
 ## 6. Frontend Design
 

@@ -6,7 +6,12 @@ vi.mock("@google/genai", () => ({
   GoogleGenAI: vi.fn(() => ({ models: { generateContent } })),
 }));
 
-import { chatAnswer, generateReport } from "../src/geminiClient.js";
+import {
+  LETTER_FALLBACK_PREFIX,
+  chatAnswer,
+  draftLetter,
+  generateReport,
+} from "../src/geminiClient.js";
 import type { NpuStats } from "../src/types.js";
 
 const stats: NpuStats = {
@@ -71,6 +76,132 @@ describe("Gemini client", () => {
     await expect(generateReport("V", stats, "None.")).rejects.toThrow(
       "Gemini returned an empty response",
     );
+  });
+});
+
+describe("council letter drafting", () => {
+  const REPORT_MD = "# NPU V report card\n\nOverall pulse is **41.0**.";
+
+  /** Every figure in `stats`, rendered the way the prompt must label it. */
+  const FIGURE_LINES = [
+    "- Incidents recorded in the last 90 days: 42",
+    "- Incidents recorded in the prior 90 days: 30",
+    "- Cases still open: 8",
+    "- Median days to resolve a case: 12",
+    '- Incidents in category "crime" (last 90 days): 20',
+    '- Incidents in category "blight" (last 90 days): 22',
+  ];
+
+  function promptFor(call = 0): string {
+    const request = generateContent.mock.calls[call][0] as { model: string; contents: string };
+    return request.contents;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.GEMINI_API_KEY = "test-key";
+  });
+
+  it("carries the NPU's real statistics into the prompt, labelled", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    const result = await draftLetter("V", stats, REPORT_MD);
+
+    expect(result).toContain("Dear Council Member");
+    const prompt = promptFor();
+    // ACCEPTANCE: the draft is only honest if the model was handed the real
+    // numbers, so at least three of them must reach the prompt verbatim.
+    const cited = FIGURE_LINES.filter((line) => prompt.includes(line));
+    expect(cited.length).toBeGreaterThanOrEqual(3);
+    expect(cited).toEqual(FIGURE_LINES);
+    expect(generateContent.mock.calls[0][0].model).toBe("gemini-2.5-flash");
+    expect(prompt).toContain("NPU V");
+    expect(prompt).toContain(REPORT_MD);
+  });
+
+  it("tells the model those figures are the only numbers it may use", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    await draftLetter("V", stats, REPORT_MD);
+
+    const prompt = promptFor();
+    expect(prompt).toMatch(/use only the verified figures/i);
+    expect(prompt).toMatch(/do not estimate/i);
+    expect(prompt).toMatch(/never guess a missing number/i);
+    expect(prompt).toMatch(/cite at least 3 of the verified figures/i);
+    expect(prompt).toMatch(/do not invent names/i);
+  });
+
+  it("omits a missing figure instead of supplying a placeholder for it", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    await draftLetter("V", { ...stats, median_resolution_days: null }, REPORT_MD);
+
+    const prompt = promptFor();
+    expect(prompt).not.toMatch(/median days to resolve/i);
+    // The label is gone entirely — no "unknown", "n/a" or estimated stand-in.
+    expect(prompt).not.toMatch(/median[^\n]*(unknown|n\/a|estimated|approximately)/i);
+    // The remaining real figures still clear the three-statistic bar.
+    const cited = FIGURE_LINES.filter((line) => prompt.includes(line));
+    expect(cited.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("drops the category lines when no category counts were cached", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    await draftLetter("V", { ...stats, counts_by_category: {} }, REPORT_MD);
+
+    const prompt = promptFor();
+    expect(prompt).not.toContain("Incidents in category");
+    expect(prompt).toContain("- Cases still open: 8");
+  });
+
+  it("forbids citing a pulse score, which it is never given", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    await draftLetter("V", stats, REPORT_MD);
+
+    expect(promptFor()).toMatch(/pulse score is not a verified figure/i);
+  });
+
+  it("returns the unavailable marker rather than a fabricated letter when Gemini fails", async () => {
+    generateContent.mockRejectedValue(new Error("quota exceeded"));
+
+    const result = await draftLetter("V", stats, REPORT_MD);
+
+    expect(result.startsWith(LETTER_FALLBACK_PREFIX)).toBe(true);
+    expect(result).toMatch(/could not draft/i);
+    expect(result).toMatch(/not a draft/i);
+    expect(result).not.toContain("Dear Council Member");
+  });
+
+  it("refuses to draft at all when fewer than three figures are usable", async () => {
+    generateContent.mockResolvedValue({ text: "Dear Council Member," });
+
+    const result = await draftLetter(
+      "V",
+      {
+        ...stats,
+        incident_count_prior_90d: Number.NaN,
+        open_case_count: Number.NaN,
+        median_resolution_days: null,
+        counts_by_category: {},
+      },
+      REPORT_MD,
+    );
+
+    expect(result.startsWith(LETTER_FALLBACK_PREFIX)).toBe(true);
+    expect(result).toMatch(/fewer than 3 usable statistics/i);
+    // Never ask the model for three citations that do not exist.
+    expect(generateContent).not.toHaveBeenCalled();
+  });
+
+  it("returns the unavailable marker when Gemini returns no text", async () => {
+    generateContent.mockResolvedValue({ text: undefined });
+
+    const result = await draftLetter("V", stats, REPORT_MD);
+
+    expect(result.startsWith(LETTER_FALLBACK_PREFIX)).toBe(true);
   });
 });
 

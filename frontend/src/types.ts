@@ -78,6 +78,26 @@ export interface ChatResponse {
   npu: string;
 }
 
+/** `POST /api/letter` request body. */
+export interface LetterRequest {
+  npu: string;
+}
+
+/**
+ * `POST /api/letter` → 200 (complete draft; streaming not required).
+ *
+ * `letter` carries the `[letter-unavailable]` marker instead of a draft when
+ * Gemini failed — the backend never fabricates one, so the UI must show that
+ * text as a failure rather than as something to send.
+ */
+export interface LetterResponse {
+  letter: string;
+  npu: string;
+}
+
+/** Prefix the backend uses when no letter could be generated. */
+export const LETTER_FALLBACK_PREFIX = "[letter-unavailable]";
+
 /** `GET /api/health` → 200. `last_ingest` is null before the first ingest. */
 export interface HealthResponse {
   ok: boolean;

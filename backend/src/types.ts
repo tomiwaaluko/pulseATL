@@ -24,6 +24,28 @@ export interface NpuStats {
   counts_by_category: Record<string, number>;
 }
 
+/**
+ * Narrows a cached `stats_json` blob — typed `unknown` because §3 stores it as
+ * JSON — to `NpuStats`. Every route that hands cached stats to an LLM client
+ * checks here first rather than trusting the cache, so the guard lives beside
+ * the interface instead of being re-declared once per route.
+ */
+export function isNpuStats(value: unknown): value is NpuStats {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const stats = value as Record<string, unknown>;
+  return (
+    typeof stats.npu === "string" &&
+    typeof stats.incident_count_90d === "number" &&
+    typeof stats.incident_count_prior_90d === "number" &&
+    typeof stats.open_case_count === "number" &&
+    (typeof stats.median_resolution_days === "number" || stats.median_resolution_days === null) &&
+    typeof stats.counts_by_category === "object" &&
+    stats.counts_by_category !== null
+  );
+}
+
 export type SourceId = "apd_crime" | "atl311";
 
 export type IncidentStatus = "open" | "closed" | "unknown";
