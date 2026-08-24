@@ -33,7 +33,7 @@ on:
       - ops/run-ingest
 
   schedule:
-    - cron: "17 * * * *"
+    - cron: "0 0 * * *"
 
 concurrency:
   group: ingest
