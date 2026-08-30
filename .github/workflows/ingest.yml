@@ -32,8 +32,10 @@ on:
     branches:
       - ops/run-ingest
 
-  schedule:
-    - cron: "0 0 * * *"
+  # Scheduled ingest disabled to conserve Render free instance hours.
+  # Re-enable with workflow_dispatch or push to ops/run-ingest when needed.
+  # schedule:
+  #   - cron: "0 0 * * *"
 
 concurrency:
   group: ingest
